@@ -1,23 +1,12 @@
-import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
 import { MapScreen } from './screens/MapScreen'
-import { QuestsScreen } from './screens/QuestsScreen'
+import { MissionsTab } from './screens/MissionsTab'
 import { PartyScreen } from './screens/PartyScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 import { AuthProvider, useAuth } from './lib/auth'
-
-const AgendaScreen = lazy(() => import('./screens/AgendaScreen').then(m => ({ default: m.AgendaScreen })))
-const ScheduleScreen = lazy(() => import('./screens/ScheduleScreen').then(m => ({ default: m.ScheduleScreen })))
-
-function LoadingFallback() {
-  return (
-    <div className="flex min-h-[50dvh] items-center justify-center">
-      <p className="animate-pulse font-mono text-xs text-fog-gray">Loading...</p>
-    </div>
-  )
-}
+import { XPProvider } from './lib/xp'
 
 function AppContent() {
   const { user, profile, loading } = useAuth()
@@ -38,21 +27,19 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-dvh bg-void-black text-terminal-white">
-      <main className="mx-auto max-w-lg pb-20">
-        <Suspense fallback={<LoadingFallback />}>
+    <XPProvider>
+      <div className="min-h-dvh bg-void-black text-terminal-white">
+        <main className="mx-auto max-w-lg pb-20">
           <Routes>
             <Route path="/" element={<MapScreen />} />
-            <Route path="/quests" element={<QuestsScreen />} />
-            <Route path="/agenda" element={<AgendaScreen />} />
-            <Route path="/schedule" element={<ScheduleScreen />} />
+            <Route path="/quests" element={<MissionsTab />} />
             <Route path="/party" element={<PartyScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
           </Routes>
-        </Suspense>
-      </main>
-      <TabBar />
-    </div>
+        </main>
+        <TabBar />
+      </div>
+    </XPProvider>
   )
 }
 

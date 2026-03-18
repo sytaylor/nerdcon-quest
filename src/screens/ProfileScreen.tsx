@@ -22,7 +22,7 @@ function getLevelInfo(xp: number) {
 }
 
 export function ProfileScreen() {
-  const { profile, user, signOut } = useAuth()
+  const { profile, user, signOut, updateProfile } = useAuth()
   const [showScanner, setShowScanner] = useState(false)
 
   const handleScan = useCallback((data: { userId: string; nerdNumber: number }) => {
@@ -120,6 +120,35 @@ export function ProfileScreen() {
           <span className="text-[10px] text-fog-gray">Quests</span>
         </Card>
       </div>
+
+      {/* Quest Line Switcher */}
+      {user && profile && (
+        <div className="mb-6">
+          <h2 className="mb-2 font-mono text-xs uppercase tracking-wider text-fog-gray">Quest Line</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {(['builder', 'operator', 'explorer'] as const).map((ql) => {
+              const isActive = profile.quest_line === ql
+              const labels = { builder: "Builder's Path", operator: "Operator's Route", explorer: "Explorer's Trail" }
+              const colors = { builder: 'text-cyan-pulse', operator: 'text-nerdcon-blue', explorer: 'text-xp-green' }
+              return (
+                <button
+                  key={ql}
+                  onClick={() => !isActive && updateProfile({ quest_line: ql })}
+                  className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-colors ${
+                    isActive
+                      ? 'border-nerdcon-blue/40 bg-nerdcon-blue/10'
+                      : 'border-white/5 bg-panel-dark hover:border-white/20'
+                  }`}
+                >
+                  <span className={`font-mono text-[10px] ${isActive ? colors[ql] : 'text-fog-gray'}`}>
+                    {labels[ql]}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Auth actions */}
       {user ? (
