@@ -7,6 +7,7 @@ import { ProfileScreen } from './screens/ProfileScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 import { AuthProvider, useAuth } from './lib/auth'
 import { XPProvider } from './lib/xp'
+import { PartyProvider } from './lib/party'
 
 function AppContent() {
   const { user, profile, loading } = useAuth()
@@ -28,6 +29,7 @@ function AppContent() {
 
   return (
     <XPProvider>
+    <PartyProvider>
       <div className="min-h-dvh bg-void-black text-terminal-white">
         <main className="mx-auto max-w-lg pb-20">
           <Routes>
@@ -39,6 +41,7 @@ function AppContent() {
         </main>
         <TabBar />
       </div>
+    </PartyProvider>
     </XPProvider>
   )
 }
