@@ -117,30 +117,11 @@ export function MissionsTab() {
     }
   }
 
-  const showDayToggle = view === 'agenda' || view === 'schedule'
-
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col" style={{ paddingTop: 'calc(var(--sat) + 0.75rem)' }}>
-      {/* Header row: title + day toggle (only on agenda/schedule) */}
-      <div className="flex items-center justify-between px-5 pb-2">
+      {/* Header */}
+      <div className="px-5 pb-2">
         <h1 className="font-mono text-lg font-bold text-terminal-white">Quests</h1>
-        {showDayToggle && (
-          <div className="flex gap-1.5">
-            {([1, 2] as const).map((d) => (
-              <button
-                key={d}
-                onClick={() => setDay(d)}
-                className={`rounded-full px-3 py-1 font-mono text-[11px] font-medium transition-colors ${
-                  day === d
-                    ? 'bg-nerdcon-blue text-terminal-white'
-                    : 'border border-white/10 text-fog-gray'
-                }`}
-              >
-                Day {d}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Segmented control */}
@@ -157,6 +138,8 @@ export function MissionsTab() {
           <AgendaView
             sessions={sessions}
             loading={sessionsLoading}
+            day={day}
+            setDay={setDay}
             trackFilter={trackFilter}
             setTrackFilter={setTrackFilter}
             isInSchedule={isInSchedule}
@@ -169,6 +152,7 @@ export function MissionsTab() {
           <ScheduleView
             schedule={schedule}
             day={day}
+            setDay={setDay}
             loading={scheduleLoading}
             removeSession={removeSession}
             onSelect={setSelectedSession}
@@ -190,6 +174,8 @@ export function MissionsTab() {
 interface AgendaViewProps {
   sessions: Session[]
   loading: boolean
+  day: 1 | 2
+  setDay: (d: 1 | 2) => void
   trackFilter: Session['track'] | null
   setTrackFilter: (t: Session['track'] | null) => void
   isInSchedule: (id: string) => boolean
@@ -198,7 +184,7 @@ interface AgendaViewProps {
   onSelect: (s: Session) => void
 }
 
-function AgendaView({ sessions, loading, trackFilter, setTrackFilter, isInSchedule, addSession, removeSession, onSelect }: AgendaViewProps) {
+function AgendaView({ sessions, loading, day, setDay, trackFilter, setTrackFilter, isInSchedule, addSession, removeSession, onSelect }: AgendaViewProps) {
   const filtered = useMemo(() => {
     if (!trackFilter) return sessions
     return sessions.filter((s) => s.track === trackFilter || s.track === 'general')
@@ -221,6 +207,24 @@ function AgendaView({ sessions, loading, trackFilter, setTrackFilter, isInSchedu
 
   return (
     <>
+      {/* Day toggle + track filters */}
+      <div className="flex items-center gap-2 px-5 pb-2">
+        {([1, 2] as const).map((d) => (
+          <button
+            key={d}
+            onClick={() => setDay(d)}
+            className={`rounded-full px-3 py-1 font-mono text-[11px] font-medium transition-colors ${
+              day === d
+                ? 'bg-nerdcon-blue text-terminal-white'
+                : 'border border-white/10 text-fog-gray'
+            }`}
+          >
+            Day {d}
+          </button>
+        ))}
+        <span className="font-mono text-[11px] text-fog-gray">·</span>
+        <span className="font-mono text-[11px] text-fog-gray">Nov {day === 1 ? 19 : 20}</span>
+      </div>
       <div className="flex gap-1.5 overflow-x-auto px-5 pb-3">
         {TRACKS.map((t) => (
           <button
@@ -296,12 +300,13 @@ function AgendaView({ sessions, loading, trackFilter, setTrackFilter, isInSchedu
 interface ScheduleViewProps {
   schedule: Session[]
   day: 1 | 2
+  setDay: (d: 1 | 2) => void
   loading: boolean
   removeSession: (id: string) => void
   onSelect: (s: Session) => void
 }
 
-function ScheduleView({ schedule, day, loading, removeSession, onSelect }: ScheduleViewProps) {
+function ScheduleView({ schedule, day, setDay, loading, removeSession, onSelect }: ScheduleViewProps) {
   const daySessions = useMemo(
     () => schedule.filter((s) => s.day === day).sort((a, b) => a.start_time.localeCompare(b.start_time)),
     [schedule, day],
@@ -310,6 +315,26 @@ function ScheduleView({ schedule, day, loading, removeSession, onSelect }: Sched
 
   return (
     <div className="px-5 pb-24">
+      {/* Day toggle */}
+      <div className="mb-3 flex items-center gap-2">
+        {([1, 2] as const).map((d) => (
+          <button
+            key={d}
+            onClick={() => setDay(d)}
+            className={`rounded-full px-3 py-1 font-mono text-[11px] font-medium transition-colors ${
+              day === d
+                ? 'bg-nerdcon-blue text-terminal-white'
+                : 'border border-white/10 text-fog-gray'
+            }`}
+          >
+            Day {d}
+          </button>
+        ))}
+        <span className="font-mono text-[11px] text-fog-gray">
+          · {daySessions.length} session{daySessions.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
       {conflicts.size > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-lg border border-loot-gold/20 bg-loot-gold/5 px-3 py-2">
           <AlertTriangle size={14} className="shrink-0 text-loot-gold" />
