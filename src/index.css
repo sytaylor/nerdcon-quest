@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/700.css";
+
+@theme {
+  /* Arcade Terminal Palette */
+  --color-void-black: #050505;
+  --color-panel-dark: #0D0D0D;
+  --color-nerdcon-blue: #3568FF;
+  --color-cyan-pulse: #00E5FF;
+  --color-xp-green: #39FF14;
+  --color-boss-magenta: #FF2D78;
+  --color-loot-gold: #FFD700;
+  --color-terminal-white: #F0F0F0;
+  --color-fog-gray: #888888;
+
+  /* Fonts */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Glow effects */
+  --shadow-glow-blue: 0 0 12px rgba(53, 104, 255, 0.5);
+  --shadow-glow-cyan: 0 0 12px rgba(0, 229, 255, 0.4);
+  --shadow-glow-green: 0 0 12px rgba(57, 255, 20, 0.4);
+  --shadow-glow-magenta: 0 0 12px rgba(255, 45, 120, 0.4);
+  --shadow-glow-gold: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+/* Base styles */
+html {
+  background-color: #050505;
+  color: #F0F0F0;
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: #050505;
+}
+
+/* Safe area for notched devices */
+:root {
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sat: env(safe-area-inset-top, 0px);
+}
+
+/* Scrollbar styling for the dark theme */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D0D;
+}
+::-webkit-scrollbar-thumb {
+  background: #888888;
+  border-radius: 2px;
+}
