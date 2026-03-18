@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Flame,
   MessageSquare,
@@ -14,6 +15,7 @@ import {
   Trash2,
   CalendarDays,
   Swords,
+  ChevronRight,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card } from '../components/Card'
@@ -78,7 +80,8 @@ function detectConflicts(sessions: Session[]): Set<string> {
 /* ─── Main Component ─── */
 
 export function MissionsTab() {
-  const [view, setView] = useState('agenda')
+  const navigate = useNavigate()
+  const [view, setView] = useState('missions')
   const [day, setDay] = useState<1 | 2>(1)
   const [trackFilter, setTrackFilter] = useState<Session['track'] | null>(null)
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -91,31 +94,53 @@ export function MissionsTab() {
   const scheduleCount = schedule.length
 
   const segments = [
+    { key: 'missions', label: 'Missions', dot: completableMissions > 0 },
     { key: 'agenda', label: 'Agenda' },
     { key: 'schedule', label: 'Schedule', badge: scheduleCount > 0 ? scheduleCount : null },
-    { key: 'missions', label: 'Missions', dot: completableMissions > 0 },
   ]
+
+  // Mission tap handlers — navigate to relevant view/tab
+  function handleMissionTap(missionId: string) {
+    switch (missionId) {
+      case 'plan-ahead':
+      case 'social-butterfly':
+        setView('agenda')
+        if (missionId === 'social-butterfly') setTrackFilter(null) // show all so social events are visible
+        break
+      case 'first-blood':
+      case 'guild-master':
+        navigate('/profile') // QR scanner is on profile
+        break
+      case 'party-up':
+        navigate('/party')
+        break
+    }
+  }
+
+  const showDayToggle = view === 'agenda' || view === 'schedule'
 
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col" style={{ paddingTop: 'calc(var(--sat) + 0.75rem)' }}>
-      {/* Header row: title + day toggle */}
+      {/* Header row: title + day toggle (only on agenda/schedule) */}
       <div className="flex items-center justify-between px-5 pb-2">
         <h1 className="font-mono text-lg font-bold text-terminal-white">Quests</h1>
-        <div className="flex gap-1.5">
-          {([1, 2] as const).map((d) => (
-            <button
-              key={d}
-              onClick={() => setDay(d)}
-              className={`rounded-full px-3 py-1 font-mono text-[11px] font-medium transition-colors ${
-                day === d
-                  ? 'bg-nerdcon-blue text-terminal-white'
-                  : 'border border-white/10 text-fog-gray'
-              }`}
-            >
-              Day {d}
-            </button>
-          ))}
-        </div>
+        {showDayToggle && (
+          <div className="flex gap-1.5">
+            {([1, 2] as const).map((d) => (
+              <button
+                key={d}
+                onClick={() => setDay(d)}
+                className={`rounded-full px-3 py-1 font-mono text-[11px] font-medium transition-colors ${
+                  day === d
+                    ? 'bg-nerdcon-blue text-terminal-white'
+                    : 'border border-white/10 text-fog-gray'
+                }`}
+              >
+                Day {d}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Segmented control */}
@@ -125,6 +150,9 @@ export function MissionsTab() {
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto">
+        {view === 'missions' && (
+          <MissionsView xp={xp} onMissionTap={handleMissionTap} />
+        )}
         {view === 'agenda' && (
           <AgendaView
             sessions={sessions}
@@ -145,9 +173,6 @@ export function MissionsTab() {
             removeSession={removeSession}
             onSelect={setSelectedSession}
           />
-        )}
-        {view === 'missions' && (
-          <MissionsView xp={xp} />
         )}
       </div>
 
@@ -347,56 +372,72 @@ function ScheduleView({ schedule, day, loading, removeSession, onSelect }: Sched
 
 interface MissionsViewProps {
   xp: ReturnType<typeof useXP>
+  onMissionTap: (missionId: string) => void
 }
 
-function MissionsView({ xp }: MissionsViewProps) {
+function MissionsView({ xp, onMissionTap }: MissionsViewProps) {
+  const LEVEL_MAX = [200, 500, 1000, 1500, 2000]
+  const currentMax = LEVEL_MAX[Math.min(xp.level - 1, LEVEL_MAX.length - 1)]
+
   return (
     <div className="px-5 pb-24">
       {/* XP summary */}
       <div className="mb-6">
-        <XPBar current={xp.totalXP} max={xp.levelProgress < 1 ? Math.ceil(xp.totalXP / xp.levelProgress) : xp.totalXP} level={xp.level} label={xp.levelLabel} />
+        <XPBar current={xp.totalXP} max={currentMax} level={xp.level} label={xp.levelLabel} />
       </div>
 
       {/* Active missions */}
       <div className="space-y-3">
         <h2 className="font-mono text-xs uppercase tracking-wider text-fog-gray">Missions</h2>
         {xp.missions.map((m) => (
-          <Card key={m.id} className={m.completed ? 'border-xp-green/20' : ''}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  {m.completed ? (
-                    <Check size={14} className="text-xp-green" />
-                  ) : m.progress >= m.target ? (
-                    <Swords size={14} className="text-loot-gold animate-pulse" />
-                  ) : (
-                    <Swords size={14} className="text-nerdcon-blue" />
-                  )}
-                  <span className={`font-mono text-sm font-bold ${m.completed ? 'text-xp-green' : 'text-terminal-white'}`}>
-                    {m.name}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-fog-gray">{m.description}</p>
-                {/* Progress bar */}
-                {!m.completed && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
-                      <motion.div
-                        className={`h-full rounded-full ${m.progress >= m.target ? 'bg-loot-gold' : 'bg-nerdcon-blue'}`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min((m.progress / m.target) * 100, 100)}%` }}
-                        transition={{ type: 'spring', stiffness: 80, damping: 20 }}
-                      />
-                    </div>
-                    <span className="font-mono text-[10px] text-fog-gray">{m.progress}/{m.target}</span>
+          <motion.div
+            key={m.id}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => !m.completed && onMissionTap(m.id)}
+            className={!m.completed ? 'cursor-pointer' : ''}
+          >
+            <Card className={m.completed ? 'border-xp-green/20' : ''}>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    {m.completed ? (
+                      <Check size={14} className="text-xp-green" />
+                    ) : m.progress >= m.target ? (
+                      <Swords size={14} className="text-loot-gold animate-pulse" />
+                    ) : (
+                      <Swords size={14} className="text-nerdcon-blue" />
+                    )}
+                    <span className={`font-mono text-sm font-bold ${m.completed ? 'text-xp-green' : 'text-terminal-white'}`}>
+                      {m.name}
+                    </span>
                   </div>
-                )}
+                  <p className="mt-1 text-xs text-fog-gray">{m.description}</p>
+                  {/* Progress bar */}
+                  {!m.completed && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
+                        <motion.div
+                          className={`h-full rounded-full ${m.progress >= m.target ? 'bg-loot-gold' : 'bg-nerdcon-blue'}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min((m.progress / m.target) * 100, 100)}%` }}
+                          transition={{ type: 'spring', stiffness: 80, damping: 20 }}
+                        />
+                      </div>
+                      <span className="font-mono text-[10px] text-fog-gray">{m.progress}/{m.target}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <Badge color={m.completed ? 'green' : 'gold'}>
+                    {m.completed ? '✓' : '+'}{m.xp_reward} XP
+                  </Badge>
+                  {!m.completed && (
+                    <ChevronRight size={14} className="text-fog-gray/40" />
+                  )}
+                </div>
               </div>
-              <Badge color={m.completed ? 'green' : 'gold'}>
-                {m.completed ? '✓' : '+'}{m.xp_reward} XP
-              </Badge>
-            </div>
-          </Card>
+            </Card>
+          </motion.div>
         ))}
       </div>
     </div>
