@@ -72,8 +72,13 @@ public/         — PWA icons, favicon
 - `npm run build` — Production build (tsc + vite)
 - `SUPABASE_ACCESS_TOKEN=xxx supabase db push -p xxx` — Apply migrations
 
-## Current State (as of Inc 2)
+## Current State (as of Inc 4)
 - Inc 0: PWA shell + design system ✅
 - Inc 1: Auth + profiles + QR + onboarding ✅
 - Inc 2: Agenda + sessions + schedule ✅
-- Inc 3: Unified missions tab + XP engine — IN PROGRESS
+- Inc 3: Unified missions tab + XP engine ✅
+- Inc 4: Party system (create, join, members, invite codes) ✅
+- Inc 5: Quest engine polish + leaderboard — NEXT
+- Inc 6: Social events + sponsor activations — PLANNED
+- Inc 7: Pre-event launch + polish — PLANNED
+- Inc 8: Load test + ship — PLANNED
