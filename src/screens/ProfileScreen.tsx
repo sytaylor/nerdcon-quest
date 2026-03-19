@@ -8,6 +8,8 @@ import { Button } from '../components/Button'
 import { QRCode } from '../components/QRCode'
 import { QRScanner } from '../components/QRScanner'
 import { useAuth } from '../lib/auth'
+import { useXP } from '../lib/xp'
+import { supabase } from '../lib/supabase'
 
 const LEVEL_THRESHOLDS = [
   { level: 1, min: 0, max: 200, label: 'Newbie' },
@@ -25,13 +27,27 @@ function getLevelInfo(xp: number) {
 export function ProfileScreen() {
   const navigate = useNavigate()
   const { profile, user, signOut, updateProfile } = useAuth()
+  const xp = useXP()
   const [showScanner, setShowScanner] = useState(false)
 
-  const handleScan = useCallback((data: { userId: string; nerdNumber: number }) => {
+  const handleScan = useCallback(async (data: { userId: string; nerdNumber: number }) => {
     setShowScanner(false)
-    // TODO: create connection via Supabase
-    alert(`Connected with Nerd #${String(data.nerdNumber).padStart(4, '0')}!`)
-  }, [])
+    if (!user) return
+
+    // Order user IDs so user_a < user_b (schema constraint)
+    const [userA, userB] = [user.id, data.userId].sort()
+
+    const { error } = await supabase
+      .from('connections')
+      .upsert({ user_a: userA, user_b: userB }, { onConflict: 'user_a,user_b' })
+
+    if (error) {
+      alert('Connection failed — try again')
+    } else {
+      alert(`Connected with Nerd #${String(data.nerdNumber).padStart(4, '0')}!`)
+      xp.checkMissions()
+    }
+  }, [user, xp])
 
   const nerdNum = String(profile?.nerd_number ?? 0).padStart(4, '0')
   const levelInfo = getLevelInfo(profile?.xp ?? 0)
@@ -108,17 +124,17 @@ export function ProfileScreen() {
       <div className="mb-6 grid grid-cols-3 gap-2">
         <Card className="flex flex-col items-center py-3">
           <Zap size={18} className="mb-1 text-cyan-pulse" />
-          <span className="font-mono text-lg font-bold text-terminal-white">0</span>
+          <span className="font-mono text-lg font-bold text-terminal-white">{xp.scheduleCount}</span>
           <span className="text-[10px] text-fog-gray">Sessions</span>
         </Card>
         <Card className="flex flex-col items-center py-3">
           <Users size={18} className="mb-1 text-xp-green" />
-          <span className="font-mono text-lg font-bold text-terminal-white">0</span>
+          <span className="font-mono text-lg font-bold text-terminal-white">{xp.connectionCount}</span>
           <span className="text-[10px] text-fog-gray">Connections</span>
         </Card>
         <Card className="flex flex-col items-center py-3">
           <Trophy size={18} className="mb-1 text-loot-gold" />
-          <span className="font-mono text-lg font-bold text-terminal-white">0</span>
+          <span className="font-mono text-lg font-bold text-terminal-white">{xp.missions.filter(m => m.completed).length}</span>
           <span className="text-[10px] text-fog-gray">Quests</span>
         </Card>
       </div>
