@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { User, LogOut, Zap, Trophy, Users, Scan } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
@@ -22,6 +23,7 @@ function getLevelInfo(xp: number) {
 }
 
 export function ProfileScreen() {
+  const navigate = useNavigate()
   const { profile, user, signOut, updateProfile } = useAuth()
   const [showScanner, setShowScanner] = useState(false)
 
@@ -120,6 +122,12 @@ export function ProfileScreen() {
           <span className="text-[10px] text-fog-gray">Quests</span>
         </Card>
       </div>
+
+      {/* Leaderboard */}
+      <Button variant="secondary" className="mb-6 w-full" onClick={() => navigate('/leaderboard')}>
+        <Trophy size={16} />
+        Leaderboard
+      </Button>
 
       {/* Quest Line Switcher */}
       {user && profile && (

@@ -24,6 +24,12 @@ export interface Mission {
   completed_at: string | null
 }
 
+export interface XPToast {
+  id: string
+  message: string
+  xp: number
+}
+
 interface XPState {
   missions: Mission[]
   totalXP: number
@@ -33,6 +39,8 @@ interface XPState {
   checkMissions: () => Promise<void>
   scheduleCount: number
   connectionCount: number
+  toasts: XPToast[]
+  dismissToast: (id: string) => void
 }
 
 interface LevelInfo {
@@ -148,6 +156,14 @@ export function XPProvider({ children }: { children: ReactNode }) {
   const [connectionCount, setConnectionCount] = useState(DEV_MODE ? 1 : 0)
   const [totalXP, setTotalXP] = useState(DEV_MODE ? MOCK_XP : 0)
   const lastSyncedXP = useRef<number>(DEV_MODE ? MOCK_XP : profile?.xp ?? 0)
+  const [toasts, setToasts] = useState<XPToast[]>([])
+  const completedMissionIds = useRef<Set<string>>(
+    new Set(MOCK_MISSIONS.filter((m) => m.completed).map((m) => m.id))
+  )
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
 
   const checkMissions = useCallback(async () => {
     if (DEV_MODE || !user) return
@@ -185,6 +201,17 @@ export function XPProvider({ children }: { children: ReactNode }) {
     const newMissions = buildMissions(sc, cc, rc)
     setMissions(newMissions)
 
+    // Fire toasts for newly completed missions
+    for (const m of newMissions) {
+      if (m.completed && !completedMissionIds.current.has(m.id)) {
+        completedMissionIds.current.add(m.id)
+        setToasts((prev) => [
+          ...prev,
+          { id: `${m.id}-${Date.now()}`, message: m.name, xp: m.xp_reward },
+        ])
+      }
+    }
+
     const xp = newMissions.filter((m) => m.completed).reduce((s, m) => s + m.xp_reward, 0)
     setTotalXP(xp)
 
@@ -214,6 +241,8 @@ export function XPProvider({ children }: { children: ReactNode }) {
         checkMissions,
         scheduleCount,
         connectionCount,
+        toasts,
+        dismissToast,
       }}
     >
       {children}
