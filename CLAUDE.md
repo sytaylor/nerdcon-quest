@@ -13,7 +13,7 @@ RPG-skinned conference app: quests, XP, parties, interactive venue map. Built to
 - **Auth:** Magic link (Supabase OTP)
 
 ## Key Architecture Decisions
-- **No chat system** — Party activity feed replaces chat (avoids moderation complexity)
+- **Party chat** — Real-time chat within party groups (max 6 people) via Supabase Realtime. Anti-spam: rate limiting (1msg/sec DB, 5msg/30sec client). DMs planned for Phase 3 (opt-in accept model).
 - **No staff QR check-in** — Deferred to future release. Simpler quest validation for v1.
 - **SVG venue map** — Custom interactive SVG, NOT Google Maps. Stub layout until real floor plan arrives.
 - **Client-side XP engine** — Quest conditions evaluated client-side, XP written to Supabase. No game engine.

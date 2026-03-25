@@ -10,6 +10,7 @@ import { OnboardingScreen } from './screens/OnboardingScreen'
 import { AuthProvider, useAuth } from './lib/auth'
 import { XPProvider, useXP } from './lib/xp'
 import { PartyProvider } from './lib/party'
+import { ChatProvider } from './lib/chat'
 
 const LeaderboardScreen = lazy(() =>
   import('./screens/LeaderboardScreen').then((m) => ({ default: m.LeaderboardScreen }))
@@ -36,7 +37,9 @@ function AppContent() {
   return (
     <XPProvider>
     <PartyProvider>
+    <ChatProvider>
       <AppShell />
+    </ChatProvider>
     </PartyProvider>
     </XPProvider>
   )
