@@ -150,6 +150,50 @@ export function useUserSchedule() {
   return { schedule, addSession, removeSession, isInSchedule, loading }
 }
 
+/* ─── useRSVP (for social events) ─── */
+
+export function useRSVP() {
+  const { user } = useAuth()
+  const [rsvpIds, setRsvpIds] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+
+  const fetchRSVPs = useCallback(async () => {
+    if (!user || DEV_MODE) { setLoading(false); return }
+
+    const { data } = await supabase
+      .from('user_rsvps')
+      .select('session_id')
+      .eq('user_id', user.id)
+
+    if (data) setRsvpIds(new Set(data.map((r: any) => r.session_id)))
+    setLoading(false)
+  }, [user])
+
+  useEffect(() => { fetchRSVPs() }, [fetchRSVPs])
+
+  const toggleRSVP = useCallback(async (sessionId: string) => {
+    if (!user) return
+
+    if (rsvpIds.has(sessionId)) {
+      // Remove RSVP
+      setRsvpIds((prev) => { const n = new Set(prev); n.delete(sessionId); return n })
+      if (!DEV_MODE) {
+        await supabase.from('user_rsvps').delete().eq('user_id', user.id).eq('session_id', sessionId)
+      }
+    } else {
+      // Add RSVP
+      setRsvpIds((prev) => new Set(prev).add(sessionId))
+      if (!DEV_MODE) {
+        await supabase.from('user_rsvps').upsert({ user_id: user.id, session_id: sessionId }, { onConflict: 'user_id,session_id' })
+      }
+    }
+  }, [user, rsvpIds])
+
+  const hasRSVP = useCallback((sessionId: string) => rsvpIds.has(sessionId), [rsvpIds])
+
+  return { rsvpIds, rsvpCount: rsvpIds.size, hasRSVP, toggleRSVP, loading }
+}
+
 /* ─── Stub Data ─── */
 
 export const STUB_SESSIONS: Session[] = [
