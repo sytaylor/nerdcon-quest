@@ -1,14 +1,16 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, LogOut, Zap, Trophy, Users, Scan } from 'lucide-react'
+import { User, LogOut, Zap, Trophy, Users, Scan, MessageCircle } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { XPBar } from '../components/XPBar'
 import { Button } from '../components/Button'
 import { QRCode } from '../components/QRCode'
 import { QRScanner } from '../components/QRScanner'
+import { DMInbox } from '../components/DMInbox'
 import { useAuth } from '../lib/auth'
 import { useXP } from '../lib/xp'
+import { useDM } from '../lib/dm'
 import { supabase } from '../lib/supabase'
 
 const LEVEL_THRESHOLDS = [
@@ -28,7 +30,9 @@ export function ProfileScreen() {
   const navigate = useNavigate()
   const { profile, user, signOut, updateProfile } = useAuth()
   const xp = useXP()
+  const dm = useDM()
   const [showScanner, setShowScanner] = useState(false)
+  const [showDMs, setShowDMs] = useState(false)
 
   const handleScan = useCallback(async (data: { userId: string; nerdNumber: number }) => {
     setShowScanner(false)
@@ -144,6 +148,40 @@ export function ProfileScreen() {
         <Trophy size={16} />
         Leaderboard
       </Button>
+
+      {/* Messages */}
+      {user && (
+        <div className="mb-6">
+          {showDMs ? (
+            <>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-mono text-xs uppercase tracking-wider text-fog-gray">Messages</h2>
+                <button
+                  onClick={() => { setShowDMs(false); dm.closeConversation() }}
+                  className="font-mono text-[10px] text-fog-gray hover:text-terminal-white"
+                >
+                  Close
+                </button>
+              </div>
+              <DMInbox />
+            </>
+          ) : (
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => setShowDMs(true)}
+            >
+              <MessageCircle size={16} />
+              Messages
+              {dm.totalUnread > 0 && (
+                <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-boss-magenta px-1.5 font-mono text-[10px] font-bold text-white">
+                  {dm.totalUnread}
+                </span>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Quest Line Switcher */}
       {user && profile && (
