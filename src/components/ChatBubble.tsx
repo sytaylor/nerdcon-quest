@@ -1,4 +1,5 @@
-import { Sparkles, Briefcase, Users } from 'lucide-react'
+import { useState } from 'react'
+import { Sparkles, Briefcase, Users, Flag } from 'lucide-react'
 import type { ChatMessage } from '../lib/chat'
 
 function QuestIcon({ questLine }: { questLine: string | null }) {
@@ -22,10 +23,15 @@ function fmtTime(iso: string): string {
 export function ChatBubble({
   message,
   isOwn,
+  onReport,
 }: {
   message: ChatMessage
   isOwn: boolean
+  onReport?: (messageId: string) => void
 }) {
+  const [showReport, setShowReport] = useState(false)
+  const [reported, setReported] = useState(false)
+
   // System messages
   if (message.message_type === 'system') {
     return (
@@ -40,6 +46,14 @@ export function ChatBubble({
   const nerdNum = message.sender?.nerd_number
     ? `#${String(message.sender.nerd_number).padStart(4, '0')}`
     : null
+
+  function handleReport() {
+    if (onReport && !reported) {
+      onReport(message.id)
+      setReported(true)
+      setShowReport(false)
+    }
+  }
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -59,8 +73,9 @@ export function ChatBubble({
           </div>
         )}
 
-        {/* Bubble */}
+        {/* Bubble — tap to show report on non-own messages */}
         <div
+          onClick={() => !isOwn && onReport && setShowReport((v) => !v)}
           className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
             isOwn
               ? 'rounded-br-md bg-nerdcon-blue text-white'
@@ -70,11 +85,23 @@ export function ChatBubble({
           {message.content}
         </div>
 
-        {/* Timestamp */}
-        <div className={`mt-0.5 px-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+        {/* Timestamp + report */}
+        <div className={`mt-0.5 flex items-center gap-2 px-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
           <span className="font-mono text-[10px] text-fog-gray/50">
             {fmtTime(message.created_at)}
           </span>
+          {showReport && !isOwn && !reported && (
+            <button
+              onClick={handleReport}
+              className="flex items-center gap-0.5 font-mono text-[10px] text-boss-magenta/60 transition-colors hover:text-boss-magenta"
+            >
+              <Flag size={9} />
+              Report
+            </button>
+          )}
+          {reported && (
+            <span className="font-mono text-[10px] text-fog-gray/40">Reported</span>
+          )}
         </div>
       </div>
     </div>

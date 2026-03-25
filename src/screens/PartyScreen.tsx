@@ -181,6 +181,7 @@ function PartyView() {
               hasMore={chat.hasMore}
               loading={chat.loading}
               onLoadMore={chat.loadMore}
+              onReport={chat.reportMessage}
             />
             <ChatInput onSend={chat.sendMessage} disabled={chat.sending} />
           </Card>

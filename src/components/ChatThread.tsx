@@ -8,12 +8,14 @@ export function ChatThread({
   hasMore,
   loading,
   onLoadMore,
+  onReport,
 }: {
   messages: ChatMessage[]
   currentUserId: string | null
   hasMore: boolean
   loading: boolean
   onLoadMore: () => void
+  onReport?: (messageId: string) => void
 }) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -92,6 +94,7 @@ export function ChatThread({
             key={msg.id}
             message={msg}
             isOwn={msg.sender_id === currentUserId}
+            onReport={onReport}
           />
         ))}
       </div>

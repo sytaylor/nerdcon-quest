@@ -10,6 +10,7 @@ import {
 import { supabase } from './supabase'
 import { useAuth } from './auth'
 import { useParty } from './party'
+import { moderateMessage } from './moderation'
 
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true'
 
@@ -39,6 +40,7 @@ interface ChatState {
   loadMore: () => Promise<void>
   unreadCount: number
   markRead: () => void
+  reportMessage: (messageId: string, reason?: string) => Promise<void>
 }
 
 /* ─── Constants ─── */
@@ -188,7 +190,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [party, hasMore, messages, enrichMessage])
 
-  /** Subscribe to realtime inserts */
+  /** Subscribe to realtime inserts with reconnection handling */
   useEffect(() => {
     if (!party || DEV_MODE) return
 
@@ -217,12 +219,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        // On reconnect, re-fetch recent messages to fill any gaps
+        if (status === 'SUBSCRIBED') {
+          // Small delay to avoid race with initial fetch
+          setTimeout(() => fetchMessages(), 500)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [party, user?.id, enrichMessage])
+  }, [party, user?.id, enrichMessage, fetchMessages])
 
   /** Fetch on mount / party change */
   useEffect(() => {
@@ -259,6 +267,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     if (isSpamming()) {
       return { error: 'Slow down! Wait a few seconds between messages.' }
+    }
+
+    // Content moderation
+    const modResult = moderateMessage(trimmed)
+    if (!modResult.allowed) {
+      return { error: modResult.reason ?? 'Message blocked' }
     }
 
     setSending(true)
@@ -304,6 +318,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }, [party, user, profile])
 
+  /** Report a message */
+  const reportMessage = useCallback(async (messageId: string, reason?: string) => {
+    if (!user || DEV_MODE) return
+
+    await supabase.from('message_reports').insert({
+      reporter_id: user.id,
+      message_id: messageId,
+      message_table: 'party_messages',
+      reason: reason ?? 'inappropriate',
+    })
+  }, [user])
+
   /** Mark messages as read */
   const markRead = useCallback(() => {
     setUnreadCount(0)
@@ -334,6 +360,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         loadMore,
         unreadCount,
         markRead,
+        reportMessage,
       }}
     >
       {children}

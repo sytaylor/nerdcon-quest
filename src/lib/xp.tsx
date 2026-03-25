@@ -68,7 +68,8 @@ function getLevelInfo(xp: number): { level: number; label: string; progress: num
 function buildMissions(
   scheduleCount: number,
   connectionCount: number,
-  rsvpCount: number
+  rsvpCount: number,
+  messageCount: number
 ): Mission[] {
   const now = new Date().toISOString()
 
@@ -141,10 +142,19 @@ function buildMissions(
       Math.min(connectionCount, 10),
       10
     ),
+    mission(
+      'party-chatter',
+      'Party Chatter',
+      'Send 10 messages in party chat',
+      50,
+      'social',
+      Math.min(messageCount, 10),
+      10
+    ),
   ]
 }
 
-const MOCK_MISSIONS = buildMissions(2, 1, 0)
+const MOCK_MISSIONS = buildMissions(2, 1, 0, 3)
 const MOCK_XP = MOCK_MISSIONS.filter((m) => m.completed).reduce((s, m) => s + m.xp_reward, 0)
 
 const XPContext = createContext<XPState | null>(null)
@@ -171,7 +181,7 @@ export function XPProvider({ children }: { children: ReactNode }) {
     const userId = user.id
 
     // Fetch counts in parallel
-    const [scheduleRes, connectionsRes, rsvpRes] = await Promise.all([
+    const [scheduleRes, connectionsRes, rsvpRes, messagesRes] = await Promise.all([
       supabase
         .from('user_schedule')
         .select('*', { count: 'exact', head: true })
@@ -189,16 +199,26 @@ export function XPProvider({ children }: { children: ReactNode }) {
           if (res.error) return { count: 0 }
           return res
         }),
+      supabase
+        .from('party_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_id', userId)
+        .eq('message_type', 'text')
+        .then((res) => {
+          if (res.error) return { count: 0 }
+          return res
+        }),
     ])
 
     const sc = scheduleRes.count ?? 0
     const cc = connectionsRes.count ?? 0
     const rc = (rsvpRes as { count: number }).count ?? 0
+    const mc = (messagesRes as { count: number }).count ?? 0
 
     setScheduleCount(sc)
     setConnectionCount(cc)
 
-    const newMissions = buildMissions(sc, cc, rc)
+    const newMissions = buildMissions(sc, cc, rc, mc)
     setMissions(newMissions)
 
     // Fire toasts for newly completed missions
