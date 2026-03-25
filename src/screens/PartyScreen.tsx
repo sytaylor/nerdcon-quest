@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { Users, Plus, LogIn, Copy, LogOut, Crown, Briefcase, Sparkles, Calendar } from 'lucide-react'
+import { Users, Plus, LogIn, Copy, LogOut, Crown, Briefcase, Sparkles, Calendar, MessageCircle } from 'lucide-react'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Sheet } from '../components/Sheet'
 import { XPBar } from '../components/XPBar'
+import { ChatThread } from '../components/ChatThread'
+import { ChatInput } from '../components/ChatInput'
 import { useParty } from '../lib/party'
+import { useChat } from '../lib/chat'
+import { useAuth } from '../lib/auth'
 
 /* ─── XP Level Thresholds ─── */
 
@@ -76,10 +80,15 @@ function NoPartyView({
 
 /* ─── Party View ─── */
 
+type PartyTab = 'members' | 'chat'
+
 function PartyView() {
   const { party, members, leaveParty } = useParty()
+  const { user } = useAuth()
+  const chat = useChat()
   const [copied, setCopied] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [activeTab, setActiveTab] = useState<PartyTab>('chat')
 
   if (!party) return null
 
@@ -128,90 +137,128 @@ function PartyView() {
         </Button>
       </div>
 
-      {/* Members List */}
-      <div className="mb-6 space-y-3">
-        <h3 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
-          Party Members
-        </h3>
-        {members.map((member) => (
-          <Card key={member.id}>
-            <div className="flex items-start gap-3">
-              {/* Avatar Placeholder */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-nerdcon-blue/15 font-mono text-sm font-bold text-nerdcon-blue">
-                {(member.profile.display_name ?? '?')[0].toUpperCase()}
-              </div>
+      {/* Tab Switcher */}
+      <div className="mb-4 flex gap-1 rounded-xl bg-white/5 p-1">
+        <button
+          onClick={() => {
+            setActiveTab('chat')
+            chat.markRead()
+          }}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 font-mono text-xs font-medium transition-colors ${
+            activeTab === 'chat'
+              ? 'bg-nerdcon-blue/20 text-nerdcon-blue'
+              : 'text-fog-gray hover:text-terminal-white'
+          }`}
+        >
+          <MessageCircle size={14} />
+          Chat
+          {chat.unreadCount > 0 && activeTab !== 'chat' && (
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-boss-magenta px-1 font-mono text-[10px] font-bold text-white">
+              {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 font-mono text-xs font-medium transition-colors ${
+            activeTab === 'members'
+              ? 'bg-nerdcon-blue/20 text-nerdcon-blue'
+              : 'text-fog-gray hover:text-terminal-white'
+          }`}
+        >
+          <Users size={14} />
+          Members ({members.length})
+        </button>
+      </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium text-terminal-white">
-                    {member.profile.display_name}
-                  </span>
-                  {member.user_id === party.created_by && (
-                    <Crown size={12} className="shrink-0 text-loot-gold" />
-                  )}
-                  <QuestLineIcon questLine={member.profile.quest_line} />
-                </div>
-
-                {member.profile.company && (
-                  <p className="truncate text-xs text-fog-gray">
-                    {member.profile.company}
-                  </p>
-                )}
-
-                <div className="mt-2 flex items-center gap-3">
-                  <Badge color="gold">
-                    #{String(member.profile.nerd_number).padStart(4, '0')}
-                  </Badge>
-                  <span className="font-mono text-[11px] text-xp-green">
-                    LVL {member.profile.level} &middot; {member.profile.xp} XP
-                  </span>
-                </div>
-
-                <div className="mt-2">
-                  <XPBar
-                    current={member.profile.xp}
-                    max={xpMax(member.profile.level)}
-                    level={member.profile.level}
-                    label={levelName(member.profile.level)}
-                  />
-                </div>
-              </div>
-            </div>
+      {/* Chat Tab */}
+      {activeTab === 'chat' && (
+        <div className="mb-6 flex flex-col" style={{ minHeight: '360px' }}>
+          <Card className="flex flex-1 flex-col !p-0 overflow-hidden">
+            <ChatThread
+              messages={chat.messages}
+              currentUserId={user?.id ?? null}
+              hasMore={chat.hasMore}
+              loading={chat.loading}
+              onLoadMore={chat.loadMore}
+            />
+            <ChatInput onSend={chat.sendMessage} disabled={chat.sending} />
           </Card>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Schedule Overlap */}
-      <div className="mb-6 space-y-3">
-        <h3 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
-          Schedule Overlap
-        </h3>
-        <Card glow="cyan">
-          <div className="flex items-center gap-3">
-            <Calendar size={18} className="shrink-0 text-cyan-pulse" />
-            <div>
-              <p className="text-sm font-medium text-terminal-white">
-                {keynoteCount}/{members.length} members going to Keynote
-              </p>
-              <p className="text-xs text-fog-gray">
-                Check the agenda to see shared sessions
-              </p>
-            </div>
+      {/* Members Tab */}
+      {activeTab === 'members' && (
+        <>
+          <div className="mb-6 space-y-3">
+            {members.map((member) => (
+              <Card key={member.id}>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-nerdcon-blue/15 font-mono text-sm font-bold text-nerdcon-blue">
+                    {(member.profile.display_name ?? '?')[0].toUpperCase()}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium text-terminal-white">
+                        {member.profile.display_name}
+                      </span>
+                      {member.user_id === party.created_by && (
+                        <Crown size={12} className="shrink-0 text-loot-gold" />
+                      )}
+                      <QuestLineIcon questLine={member.profile.quest_line} />
+                    </div>
+
+                    {member.profile.company && (
+                      <p className="truncate text-xs text-fog-gray">
+                        {member.profile.company}
+                      </p>
+                    )}
+
+                    <div className="mt-2 flex items-center gap-3">
+                      <Badge color="gold">
+                        #{String(member.profile.nerd_number).padStart(4, '0')}
+                      </Badge>
+                      <span className="font-mono text-[11px] text-xp-green">
+                        LVL {member.profile.level} &middot; {member.profile.xp} XP
+                      </span>
+                    </div>
+
+                    <div className="mt-2">
+                      <XPBar
+                        current={member.profile.xp}
+                        max={xpMax(member.profile.level)}
+                        level={member.profile.level}
+                        label={levelName(member.profile.level)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
-        </Card>
-      </div>
 
-      {/* Activity Placeholder */}
-      <div className="mb-6 space-y-3">
-        <h3 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
-          Activity
-        </h3>
-        <Card>
-          <p className="text-center text-sm text-fog-gray">
-            Party activity feed &mdash; coming soon
-          </p>
-        </Card>
-      </div>
+          {/* Schedule Overlap */}
+          <div className="mb-6 space-y-3">
+            <h3 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
+              Schedule Overlap
+            </h3>
+            <Card glow="cyan">
+              <div className="flex items-center gap-3">
+                <Calendar size={18} className="shrink-0 text-cyan-pulse" />
+                <div>
+                  <p className="text-sm font-medium text-terminal-white">
+                    {keynoteCount}/{members.length} members going to Keynote
+                  </p>
+                  <p className="text-xs text-fog-gray">
+                    Check the agenda to see shared sessions
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
 
       {/* Leave Party */}
       {!confirmLeave ? (
