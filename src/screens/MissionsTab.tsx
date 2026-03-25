@@ -22,7 +22,8 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { XPBar } from '../components/XPBar'
 import { SegmentedControl } from '../components/SegmentedControl'
-import { useSessions, useUserSchedule, type Session } from '../lib/sessions'
+import { useSessions, useUserSchedule, useRSVP, type Session } from '../lib/sessions'
+import { useSponsors, useSponsorVisits, type Sponsor } from '../lib/sponsors'
 import { SessionDetailSheet } from './SessionDetailSheet'
 import { fmtTime } from '../lib/format'
 import { useXP } from '../lib/xp'
@@ -89,6 +90,10 @@ export function MissionsTab() {
   const { sessions, loading: sessionsLoading } = useSessions({ day })
   const { schedule, isInSchedule, addSession, removeSession, loading: scheduleLoading } = useUserSchedule()
   const xp = useXP()
+  const socialSessions = useSessions({ session_type: 'social' })
+  const rsvp = useRSVP()
+  const { sponsors } = useSponsors()
+  const sponsorVisits = useSponsorVisits()
 
   const completableMissions = xp.missions.filter(m => !m.completed && m.progress >= m.target).length
   const scheduleCount = schedule.length
@@ -97,6 +102,7 @@ export function MissionsTab() {
     { key: 'missions', label: 'Missions', dot: completableMissions > 0 },
     { key: 'agenda', label: 'Agenda' },
     { key: 'schedule', label: 'Schedule', badge: scheduleCount > 0 ? scheduleCount : null },
+    { key: 'events', label: 'Events' },
   ]
 
   // Mission tap handlers — navigate to relevant view/tab
@@ -113,6 +119,13 @@ export function MissionsTab() {
         break
       case 'party-up':
         navigate('/party')
+        break
+      case 'party-chatter':
+        navigate('/party')
+        break
+      case 'booth-crawler':
+      case 'sponsor-champion':
+        setView('events')
         break
     }
   }
@@ -156,6 +169,16 @@ export function MissionsTab() {
             loading={scheduleLoading}
             removeSession={removeSession}
             onSelect={setSelectedSession}
+          />
+        )}
+        {view === 'events' && (
+          <EventsView
+            socialSessions={socialSessions.sessions}
+            rsvp={rsvp}
+            sponsors={sponsors}
+            sponsorVisits={sponsorVisits}
+            onSelect={setSelectedSession}
+            xp={xp}
           />
         )}
       </div>
@@ -411,6 +434,8 @@ function MissionsView({ xp, onMissionTap }: MissionsViewProps) {
         <XPBar current={xp.totalXP} max={currentMax} level={xp.level} label={xp.levelLabel} />
       </div>
 
+
+
       {/* Active missions */}
       <div className="space-y-3">
         <h2 className="font-mono text-xs uppercase tracking-wider text-fog-gray">Missions</h2>
@@ -464,6 +489,155 @@ function MissionsView({ xp, onMissionTap }: MissionsViewProps) {
             </Card>
           </motion.div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Events View (Social Events + Sponsors) ─── */
+
+interface EventsViewProps {
+  socialSessions: Session[]
+  rsvp: ReturnType<typeof useRSVP>
+  sponsors: Sponsor[]
+  sponsorVisits: ReturnType<typeof useSponsorVisits>
+  onSelect: (s: Session) => void
+  xp: ReturnType<typeof useXP>
+}
+
+function EventsView({ socialSessions, rsvp, sponsors, sponsorVisits, onSelect, xp }: EventsViewProps) {
+  const categoryLabel: Record<string, string> = { platinum: 'Platinum', gold: 'Gold', silver: 'Silver' }
+  const categoryGlow: Record<string, 'cyan' | 'gold' | 'none'> = { platinum: 'cyan', gold: 'gold', silver: 'none' }
+  const categoryBorder: Record<string, string> = { platinum: 'border-cyan-pulse/30', gold: 'border-loot-gold/20', silver: 'border-white/10' }
+
+  const grouped = sponsors.reduce((acc, s) => {
+    if (!acc[s.category]) acc[s.category] = []
+    acc[s.category].push(s)
+    return acc
+  }, {} as Record<string, Sponsor[]>)
+
+  return (
+    <div className="px-5 pb-24">
+      {/* Social Events */}
+      <div className="mb-6 space-y-3">
+        <h2 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
+          Social Events
+        </h2>
+        {socialSessions.length === 0 && (
+          <Card><p className="text-center text-sm text-fog-gray">No social events loaded</p></Card>
+        )}
+        {socialSessions.map((session) => {
+          const hasRsvp = rsvp.hasRSVP(session.id)
+          return (
+            <motion.div key={session.id} whileTap={{ scale: 0.98 }}>
+              <Card className={hasRsvp ? 'border-xp-green/20' : ''}>
+                <div className="flex items-start gap-3" onClick={() => onSelect(session)}>
+                  <div className="flex-1 cursor-pointer">
+                    <div className="mb-1 flex items-center gap-2">
+                      <Users size={13} className="text-xp-green" />
+                      <Badge color="gray">Day {session.day}</Badge>
+                      <span className="font-mono text-[10px] text-fog-gray">
+                        {fmtTime(session.start_time)}–{fmtTime(session.end_time)}
+                      </span>
+                    </div>
+                    <h3 className="font-mono text-sm font-bold text-terminal-white">{session.title}</h3>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-fog-gray">
+                      <MapPin size={10} />{session.room}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); rsvp.toggleRSVP(session.id); xp.checkMissions() }}
+                    className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 font-mono text-[11px] font-medium transition-all ${
+                      hasRsvp
+                        ? 'bg-xp-green/15 text-xp-green'
+                        : 'border border-white/10 bg-panel-dark text-fog-gray hover:border-xp-green/40 hover:text-xp-green'
+                    }`}
+                  >
+                    {hasRsvp ? <Check size={12} /> : <Plus size={12} />}
+                    {hasRsvp ? 'Going' : 'RSVP'}
+                  </button>
+                </div>
+              </Card>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Sponsor Side Quests */}
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
+            Sponsor Side Quests
+          </h2>
+          <Badge color="gold">{sponsorVisits.visitCount}/{sponsors.length}</Badge>
+        </div>
+
+        {(['platinum', 'gold', 'silver'] as const).map((tier) => {
+          const tierSponsors = grouped[tier]
+          if (!tierSponsors || tierSponsors.length === 0) return null
+
+          return (
+            <div key={tier} className="space-y-2">
+              <h3 className="font-mono text-[10px] uppercase tracking-widest text-fog-gray/60">
+                {categoryLabel[tier]} Sponsors
+              </h3>
+              {tierSponsors.map((sponsor) => {
+                const visited = sponsorVisits.hasVisited(sponsor.id)
+                return (
+                  <motion.div key={sponsor.id} whileTap={{ scale: 0.98 }}>
+                    <Card
+                      glow={visited ? 'none' : categoryGlow[sponsor.category]}
+                      className={visited ? 'border-xp-green/20' : categoryBorder[sponsor.category]}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Logo emoji */}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5 text-xl">
+                          {sponsor.logo_emoji}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold text-terminal-white">{sponsor.name}</span>
+                            <Badge color="gray">{sponsor.booth_number}</Badge>
+                          </div>
+                          <p className="mt-0.5 text-xs text-fog-gray">{sponsor.tagline}</p>
+
+                          {/* Side quest */}
+                          <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-1.5">
+                            {visited ? (
+                              <Check size={12} className="shrink-0 text-xp-green" />
+                            ) : (
+                              <Swords size={12} className="shrink-0 text-loot-gold" />
+                            )}
+                            <span className={`font-mono text-[11px] ${visited ? 'text-xp-green' : 'text-terminal-white'}`}>
+                              {sponsor.side_quest_title}
+                            </span>
+                            <Badge color={visited ? 'green' : 'gold'}>
+                              {visited ? '✓' : '+'}{sponsor.side_quest_xp} XP
+                            </Badge>
+                          </div>
+                          {!visited && (
+                            <p className="mt-1 text-[11px] text-fog-gray/70">{sponsor.side_quest_description}</p>
+                          )}
+                        </div>
+
+                        {/* Complete button */}
+                        {!visited && (
+                          <button
+                            onClick={() => sponsorVisits.recordVisit(sponsor.id)}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-loot-gold/20 bg-loot-gold/5 text-loot-gold transition-all hover:bg-loot-gold/15"
+                          >
+                            <Check size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </Card>
+                  </motion.div>
+                )
+              })}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
