@@ -38,6 +38,12 @@ export function ProfileScreen() {
     setShowScanner(false)
     if (!user) return
 
+    // Anti-gaming: prevent self-scan
+    if (data.userId === user.id) {
+      alert("Nice try! You can't scan your own QR code.")
+      return
+    }
+
     // Order user IDs so user_a < user_b (schema constraint)
     const [userA, userB] = [user.id, data.userId].sort()
 

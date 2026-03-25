@@ -78,7 +78,7 @@ public/         — PWA icons, favicon
 - Inc 2: Agenda + sessions + schedule ✅
 - Inc 3: Unified missions tab + XP engine ✅
 - Inc 4: Party system (create, join, members, invite codes) ✅
-- Inc 5: Quest engine polish + leaderboard — NEXT
+- Inc 5: Quest engine polish + leaderboard ✅
 - Inc 6: Social events + sponsor activations — PLANNED
 - Inc 7: Pre-event launch + polish — PLANNED
 - Inc 8: Load test + ship — PLANNED

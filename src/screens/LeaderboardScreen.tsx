@@ -11,6 +11,11 @@ const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true'
 
 type Category = 'overall' | 'connections' | 'sessions'
 
+interface LeaderboardEntry extends Profile {
+  /** Extra stat for category leaderboards */
+  stat_count?: number
+}
+
 const MOCK_LEADERBOARD: Profile[] = [
   { id: 'lb-1', nerd_number: 1, display_name: 'Simon Taylor', company: 'Fintech Brainfood', role: 'Founder', bio: null, looking_for: null, avatar_url: null, quest_line: 'explorer', xp: 1850, level: 5 },
   { id: 'lb-2', nerd_number: 7, display_name: 'Alex Chen', company: 'Stripe', role: 'Engineer', bio: null, looking_for: null, avatar_url: null, quest_line: 'builder', xp: 1420, level: 4 },
@@ -49,7 +54,7 @@ export function LeaderboardScreen() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const [category, setCategory] = useState<Category>('overall')
-  const [entries, setEntries] = useState<Profile[]>([])
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -57,29 +62,31 @@ export function LeaderboardScreen() {
       setLoading(true)
 
       if (DEV_MODE) {
-        // Simulate network delay
         await new Promise((r) => setTimeout(r, 300))
         setEntries(MOCK_LEADERBOARD)
         setLoading(false)
         return
       }
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('xp', { ascending: false })
-        .limit(20)
+      if (category === 'overall') {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('xp', { ascending: false })
+          .limit(20)
+        if (data) setEntries(data as LeaderboardEntry[])
+      } else if (category === 'connections') {
+        const { data } = await supabase.rpc('leaderboard_connections', { lim: 20 })
+        if (data) setEntries(data.map((d: any) => ({ ...d, stat_count: Number(d.connection_count) })))
+      } else if (category === 'sessions') {
+        const { data } = await supabase.rpc('leaderboard_sessions', { lim: 20 })
+        if (data) setEntries(data.map((d: any) => ({ ...d, stat_count: Number(d.session_count) })))
+      }
 
-      if (data) setEntries(data as Profile[])
       setLoading(false)
     }
 
-    if (category === 'overall') {
-      fetchLeaderboard()
-    } else {
-      setLoading(false)
-      setEntries([])
-    }
+    fetchLeaderboard()
   }, [category])
 
   const currentUserId = profile?.id ?? (DEV_MODE ? 'dev-user-001' : null)
@@ -123,14 +130,7 @@ export function LeaderboardScreen() {
       </div>
 
       {/* Content */}
-      {category !== 'overall' ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <Trophy size={40} className="text-fog-gray/30" />
-          <p className="max-w-[240px] text-center font-mono text-xs text-fog-gray">
-            Coming at NerdCon! Rankings by {category} will be available during the event.
-          </p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <p className="py-12 text-center font-mono text-xs animate-pulse text-fog-gray">
           Loading leaderboard...
         </p>
@@ -154,7 +154,7 @@ export function LeaderboardScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08, type: 'spring', stiffness: 300, damping: 30 }}
               >
-                <TopCard rank={rank} entry={entry} isCurrentUser={isCurrentUser} />
+                <TopCard rank={rank} entry={entry} isCurrentUser={isCurrentUser} category={category} />
               </motion.div>
             )
           })}
@@ -175,7 +175,7 @@ export function LeaderboardScreen() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.24 + i * 0.04, type: 'spring', stiffness: 300, damping: 30 }}
                   >
-                    <RankRow rank={rank} entry={entry} isCurrentUser={isCurrentUser} />
+                    <RankRow rank={rank} entry={entry} isCurrentUser={isCurrentUser} category={category} />
                   </motion.div>
                 )
               })}
@@ -191,11 +191,12 @@ export function LeaderboardScreen() {
 
 interface TopCardProps {
   rank: number
-  entry: Profile
+  entry: LeaderboardEntry
   isCurrentUser: boolean
+  category: Category
 }
 
-function TopCard({ rank, entry, isCurrentUser }: TopCardProps) {
+function TopCard({ rank, entry, isCurrentUser, category }: TopCardProps) {
   const glowMap: Record<number, 'gold' | 'none'> = { 1: 'gold', 2: 'none', 3: 'none' }
   const rankColors: Record<number, string> = {
     1: 'text-loot-gold',
@@ -247,12 +248,25 @@ function TopCard({ rank, entry, isCurrentUser }: TopCardProps) {
           </div>
         </div>
 
-        {/* XP + Level */}
+        {/* XP + Level / Category stat */}
         <div className="flex flex-col items-end gap-0.5">
-          <span className="font-mono text-sm font-bold text-xp-green">{entry.xp} XP</span>
-          <span className="font-mono text-[10px] text-fog-gray">
-            LVL {entry.level} {getLevelLabel(entry.level)}
-          </span>
+          {category === 'overall' ? (
+            <>
+              <span className="font-mono text-sm font-bold text-xp-green">{entry.xp} XP</span>
+              <span className="font-mono text-[10px] text-fog-gray">
+                LVL {entry.level} {getLevelLabel(entry.level)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-mono text-sm font-bold text-cyan-pulse">
+                {entry.stat_count ?? 0}
+              </span>
+              <span className="font-mono text-[10px] text-fog-gray">
+                {category === 'connections' ? 'connections' : 'sessions'}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </Card>
@@ -263,11 +277,12 @@ function TopCard({ rank, entry, isCurrentUser }: TopCardProps) {
 
 interface RankRowProps {
   rank: number
-  entry: Profile
+  entry: LeaderboardEntry
   isCurrentUser: boolean
+  category: Category
 }
 
-function RankRow({ rank, entry, isCurrentUser }: RankRowProps) {
+function RankRow({ rank, entry, isCurrentUser, category }: RankRowProps) {
   return (
     <div
       className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
@@ -299,10 +314,21 @@ function RankRow({ rank, entry, isCurrentUser }: RankRowProps) {
         </div>
       </div>
 
-      {/* XP */}
+      {/* XP / Category stat */}
       <div className="flex flex-col items-end">
-        <span className="font-mono text-xs font-bold text-xp-green">{entry.xp} XP</span>
-        <span className="font-mono text-[10px] text-fog-gray">LVL {entry.level}</span>
+        {category === 'overall' ? (
+          <>
+            <span className="font-mono text-xs font-bold text-xp-green">{entry.xp} XP</span>
+            <span className="font-mono text-[10px] text-fog-gray">LVL {entry.level}</span>
+          </>
+        ) : (
+          <>
+            <span className="font-mono text-xs font-bold text-cyan-pulse">{entry.stat_count ?? 0}</span>
+            <span className="font-mono text-[10px] text-fog-gray">
+              {category === 'connections' ? 'conns' : 'sched'}
+            </span>
+          </>
+        )}
       </div>
     </div>
   )

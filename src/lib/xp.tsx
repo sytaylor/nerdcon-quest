@@ -167,8 +167,13 @@ export function XPProvider({ children }: { children: ReactNode }) {
   const [totalXP, setTotalXP] = useState(DEV_MODE ? MOCK_XP : 0)
   const lastSyncedXP = useRef<number>(DEV_MODE ? MOCK_XP : profile?.xp ?? 0)
   const [toasts, setToasts] = useState<XPToast[]>([])
+
+  // Load previously completed missions from profile
+  const savedCompletions = (profile as any)?.completed_missions as string[] | undefined
   const completedMissionIds = useRef<Set<string>>(
-    new Set(MOCK_MISSIONS.filter((m) => m.completed).map((m) => m.id))
+    DEV_MODE
+      ? new Set(MOCK_MISSIONS.filter((m) => m.completed).map((m) => m.id))
+      : new Set(savedCompletions ?? [])
   )
 
   const dismissToast = useCallback((id: string) => {
@@ -235,11 +240,15 @@ export function XPProvider({ children }: { children: ReactNode }) {
     const xp = newMissions.filter((m) => m.completed).reduce((s, m) => s + m.xp_reward, 0)
     setTotalXP(xp)
 
-    // Sync XP to profile if changed
+    // Sync XP and completed missions to profile if changed
     if (xp !== lastSyncedXP.current) {
       const { level } = getLevelInfo(xp)
       lastSyncedXP.current = xp
-      await updateProfile({ xp, level })
+      await updateProfile({
+        xp,
+        level,
+        completed_missions: Array.from(completedMissionIds.current),
+      } as any)
     }
   }, [user, updateProfile])
 
