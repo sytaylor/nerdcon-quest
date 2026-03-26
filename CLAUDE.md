@@ -39,7 +39,7 @@ RPG-skinned conference app: quests, XP, parties, interactive venue map. Built to
 - Never reused. Simon is Nerd #0001.
 
 ## Navigation
-- 4 bottom tabs: Map, Quests, Party, Profile
+- 4 bottom tabs: Map, Quests, Community, Profile
 - Quests tab is a hub with segmented control: Agenda / My Schedule / Missions
 - Agenda is the default view (most-used)
 - No page navigation from the Quests tab — views swap in-place

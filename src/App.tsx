@@ -1,10 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
 import { XPToast } from './components/XPToast'
 import { MapScreen } from './screens/MapScreen'
 import { MissionsTab } from './screens/MissionsTab'
-import { PartyScreen } from './screens/PartyScreen'
+import { CommunityScreen } from './screens/CommunityScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 import { AuthProvider, useAuth } from './lib/auth'
@@ -12,6 +12,7 @@ import { XPProvider, useXP } from './lib/xp'
 import { PartyProvider } from './lib/party'
 import { ChatProvider } from './lib/chat'
 import { DMProvider } from './lib/dm'
+import { ConnectionsProvider } from './lib/connections'
 
 const LeaderboardScreen = lazy(() =>
   import('./screens/LeaderboardScreen').then((m) => ({ default: m.LeaderboardScreen }))
@@ -40,7 +41,9 @@ function AppContent() {
     <PartyProvider>
     <ChatProvider>
     <DMProvider>
+    <ConnectionsProvider>
       <AppShell />
+    </ConnectionsProvider>
     </DMProvider>
     </ChatProvider>
     </PartyProvider>
@@ -58,9 +61,11 @@ function AppShell() {
           <Routes>
             <Route path="/" element={<MapScreen />} />
             <Route path="/quests" element={<MissionsTab />} />
-            <Route path="/party" element={<PartyScreen />} />
+            <Route path="/community" element={<CommunityScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
             <Route path="/leaderboard" element={<LeaderboardScreen />} />
+            {/* Redirect old /party route */}
+            <Route path="/party" element={<Navigate to="/community" replace />} />
           </Routes>
         </Suspense>
       </main>
