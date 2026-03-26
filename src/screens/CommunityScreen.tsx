@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Users, MessageCircle, Zap, UserPlus, Plus, LogIn, Copy, LogOut, Crown, ChevronRight } from 'lucide-react'
+import { Plus, LogIn, ChevronRight } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -10,7 +10,7 @@ import { DMInbox } from '../components/DMInbox'
 import { ChatThread } from '../components/ChatThread'
 import { ChatInput } from '../components/ChatInput'
 import { useAuth } from '../lib/auth'
-import { useParty, type Party, type PartyMember } from '../lib/party'
+import { useParty } from '../lib/party'
 import { useChat } from '../lib/chat'
 import { useDM } from '../lib/dm'
 import { useConnections } from '../lib/connections'
@@ -29,13 +29,11 @@ const MOCK_ORGANIC_SQUADS = [
 /* ─── Main Screen ─── */
 
 export function CommunityScreen() {
-  const { party, loading: partyLoading } = useParty()
   const { requestCount } = useConnections()
   const dm = useDM()
   const [view, setView] = useState('people')
 
   const unreadMessages = dm.totalUnread
-  const totalNotifications = requestCount + unreadMessages
 
   const segments = [
     { key: 'people', label: 'People', badge: requestCount > 0 ? requestCount : null },
@@ -128,7 +126,7 @@ function MessagesView() {
 /* ─── Squads View ─── */
 
 function SquadsView() {
-  const { party, members, loading, leaveParty } = useParty()
+  const { party, members, loading } = useParty()
   const { user } = useAuth()
   const chat = useChat()
   const [createOpen, setCreateOpen] = useState(false)
@@ -156,7 +154,7 @@ function SquadsView() {
                 </button>
                 <span className="font-mono text-xs text-terminal-white">{party.name}</span>
               </div>
-              <Card className="flex flex-col !p-0 overflow-hidden" style={{ minHeight: '340px' }}>
+              <Card className="flex flex-col !p-0 overflow-hidden min-h-[340px]">
                 <ChatThread
                   messages={chat.messages}
                   currentUserId={user?.id ?? null}

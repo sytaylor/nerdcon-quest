@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import { ArrowLeft, Check, X, MessageCircle, ChevronRight } from 'lucide-react'
 import { Card } from './Card'
 import { Badge } from './Badge'
-import { Button } from './Button'
 import { ChatThread } from './ChatThread'
 import { ChatInput } from './ChatInput'
 import { useDM } from '../lib/dm'
@@ -111,12 +109,8 @@ function ConvoItem({ convo, onClick }: {
 export function DMInbox() {
   const dm = useDM()
   const { user } = useAuth()
-  const [acceptingId, setAcceptingId] = useState<string | null>(null)
-
   async function handleAccept(id: string) {
-    setAcceptingId(id)
     await dm.acceptRequest(id)
-    setAcceptingId(null)
   }
 
   // Active conversation view
