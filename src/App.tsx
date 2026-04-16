@@ -2,10 +2,8 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
 import { XPToast } from './components/XPToast'
-import { MapScreen } from './screens/MapScreen'
-import { MissionsTab } from './screens/MissionsTab'
-import { CommunityScreen } from './screens/CommunityScreen'
-import { ProfileScreen } from './screens/ProfileScreen'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { ConnectionStatus } from './components/ConnectionStatus'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 import { AuthProvider, useAuth } from './lib/auth'
 import { XPProvider, useXP } from './lib/xp'
@@ -14,9 +12,30 @@ import { ChatProvider } from './lib/chat'
 import { DMProvider } from './lib/dm'
 import { ConnectionsProvider } from './lib/connections'
 
+// Code-split all screens — reduces initial bundle from 1MB
+const MapScreen = lazy(() =>
+  import('./screens/MapScreen').then((m) => ({ default: m.MapScreen }))
+)
+const MissionsTab = lazy(() =>
+  import('./screens/MissionsTab').then((m) => ({ default: m.MissionsTab }))
+)
+const CommunityScreen = lazy(() =>
+  import('./screens/CommunityScreen').then((m) => ({ default: m.CommunityScreen }))
+)
+const ProfileScreen = lazy(() =>
+  import('./screens/ProfileScreen').then((m) => ({ default: m.ProfileScreen }))
+)
 const LeaderboardScreen = lazy(() =>
   import('./screens/LeaderboardScreen').then((m) => ({ default: m.LeaderboardScreen }))
 )
+
+function ScreenLoader() {
+  return (
+    <div className="flex min-h-[60dvh] items-center justify-center">
+      <p className="animate-pulse font-mono text-xs text-fog-gray">Loading...</p>
+    </div>
+  )
+}
 
 function AppContent() {
   const { user, profile, loading } = useAuth()
@@ -56,18 +75,21 @@ function AppShell() {
 
   return (
     <div className="min-h-dvh bg-void-black text-terminal-white">
+      <ConnectionStatus />
       <main className="mx-auto max-w-lg pb-20">
-        <Suspense fallback={<div className="flex min-h-dvh items-center justify-center"><p className="animate-pulse font-mono text-xs text-fog-gray">Loading...</p></div>}>
-          <Routes>
-            <Route path="/" element={<MapScreen />} />
-            <Route path="/quests" element={<MissionsTab />} />
-            <Route path="/community" element={<CommunityScreen />} />
-            <Route path="/profile" element={<ProfileScreen />} />
-            <Route path="/leaderboard" element={<LeaderboardScreen />} />
-            {/* Redirect old /party route */}
-            <Route path="/party" element={<Navigate to="/community" replace />} />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary level="screen">
+          <Suspense fallback={<ScreenLoader />}>
+            <Routes>
+              <Route path="/" element={<MapScreen />} />
+              <Route path="/quests" element={<MissionsTab />} />
+              <Route path="/community" element={<CommunityScreen />} />
+              <Route path="/profile" element={<ProfileScreen />} />
+              <Route path="/leaderboard" element={<LeaderboardScreen />} />
+              {/* Redirect old /party route */}
+              <Route path="/party" element={<Navigate to="/community" replace />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <TabBar />
       {xp.toasts.map((toast) => (
@@ -85,8 +107,10 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary level="global">
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
