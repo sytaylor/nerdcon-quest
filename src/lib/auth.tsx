@@ -16,6 +16,7 @@ export interface Profile {
   quest_line: 'builder' | 'operator' | 'explorer' | null
   xp: number
   level: number
+  completed_missions?: string[]
 }
 
 interface AuthState {
@@ -42,6 +43,7 @@ const MOCK_PROFILE: Profile = {
   quest_line: 'builder',
   xp: 150,
   level: 1,
+  completed_missions: [],
 }
 
 const MOCK_USER = { id: 'dev-user-001' } as User

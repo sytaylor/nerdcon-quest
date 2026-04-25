@@ -1,9 +1,9 @@
-import { type ButtonHTMLAttributes } from 'react'
+import type { ComponentProps } from 'react'
 import { motion } from 'framer-motion'
 
 type Variant = 'primary' | 'secondary' | 'ghost'
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ComponentProps<typeof motion.button> {
   variant?: Variant
 }
 
@@ -21,7 +21,7 @@ export function Button({ variant = 'primary', className = '', children, ...props
     <motion.button
       whileTap={{ scale: 0.97 }}
       className={`inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-mono text-sm font-medium transition-colors ${styles[variant]} ${className}`}
-      {...(props as any)}
+      {...props}
     >
       {children}
     </motion.button>

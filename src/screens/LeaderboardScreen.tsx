@@ -16,6 +16,14 @@ interface LeaderboardEntry extends Profile {
   stat_count?: number
 }
 
+interface ConnectionLeaderboardRow extends Profile {
+  connection_count: number | string
+}
+
+interface SessionLeaderboardRow extends Profile {
+  session_count: number | string
+}
+
 const MOCK_LEADERBOARD: Profile[] = [
   { id: 'lb-1', nerd_number: 1, display_name: 'Simon Taylor', company: 'Fintech Brainfood', role: 'Founder', bio: null, looking_for: null, avatar_url: null, quest_line: 'explorer', xp: 1850, level: 5 },
   { id: 'lb-2', nerd_number: 7, display_name: 'Alex Chen', company: 'Stripe', role: 'Engineer', bio: null, looking_for: null, avatar_url: null, quest_line: 'builder', xp: 1420, level: 4 },
@@ -77,10 +85,20 @@ export function LeaderboardScreen() {
         if (data) setEntries(data as LeaderboardEntry[])
       } else if (category === 'connections') {
         const { data } = await supabase.rpc('leaderboard_connections', { lim: 20 })
-        if (data) setEntries(data.map((d: any) => ({ ...d, stat_count: Number(d.connection_count) })))
+        if (data) {
+          setEntries((data as ConnectionLeaderboardRow[]).map((d) => ({
+            ...d,
+            stat_count: Number(d.connection_count),
+          })))
+        }
       } else if (category === 'sessions') {
         const { data } = await supabase.rpc('leaderboard_sessions', { lim: 20 })
-        if (data) setEntries(data.map((d: any) => ({ ...d, stat_count: Number(d.session_count) })))
+        if (data) {
+          setEntries((data as SessionLeaderboardRow[]).map((d) => ({
+            ...d,
+            stat_count: Number(d.session_count),
+          })))
+        }
       }
 
       setLoading(false)

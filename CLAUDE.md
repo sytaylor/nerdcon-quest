@@ -8,7 +8,7 @@ RPG-skinned conference app: quests, XP, parties, interactive venue map. Built to
 - **Frontend:** React 19 + TypeScript, Vite 8, TailwindCSS v4, Framer Motion
 - **Backend:** Supabase (Postgres + Realtime + Auth + Edge Functions)
 - **PWA:** vite-plugin-pwa + Workbox
-- **Native:** Capacitor (future — iOS/Android store builds)
+- **Native:** Cut from v1. Ship hardened PWA first; revisit native only after prototype adoption and ops are proven.
 - **Deploy:** Vercel (PWA), Supabase cloud (DB)
 - **Auth:** Magic link (Supabase OTP)
 
@@ -16,7 +16,7 @@ RPG-skinned conference app: quests, XP, parties, interactive venue map. Built to
 - **Party chat** — Real-time chat within party groups (max 6 people) via Supabase Realtime. Anti-spam: rate limiting (1msg/sec DB, 5msg/30sec client). DMs planned for Phase 3 (opt-in accept model).
 - **No staff QR check-in** — Deferred to future release. Simpler quest validation for v1.
 - **SVG venue map** — Custom interactive SVG, NOT Google Maps. Stub layout until real floor plan arrives.
-- **Client-side XP engine** — Quest conditions evaluated client-side, XP written to Supabase. No game engine.
+- **Server-owned XP sync** — Client renders progress, but `sync_profile_missions()` recalculates XP from trusted database rows before profile XP/level changes.
 - **Dev mode** — `VITE_DEV_MODE=true` in .env bypasses Supabase auth with mock data (Nerd #0042, 150 XP)
 
 ## Brand — "Arcade Terminal"
@@ -70,9 +70,10 @@ public/         — PWA icons, favicon
 ## Commands
 - `npm run dev` — Start dev server (port 5173)
 - `npm run build` — Production build (tsc + vite)
+- `npm run lint` — ESLint quality gate
 - `SUPABASE_ACCESS_TOKEN=xxx supabase db push -p xxx` — Apply migrations
 
-## Current State (as of Inc 4)
+## Current State
 - Inc 0: PWA shell + design system ✅
 - Inc 1: Auth + profiles + QR + onboarding ✅
 - Inc 2: Agenda + sessions + schedule ✅
@@ -80,5 +81,9 @@ public/         — PWA icons, favicon
 - Inc 4: Party system (create, join, members, invite codes) ✅
 - Inc 5: Quest engine polish + leaderboard ✅
 - Inc 6: Social events + sponsor activations ✅
-- Inc 7: Pre-event launch + polish — PLANNED
+- Inc 7: Security hardening + prototype plan ✅
 - Inc 8: Load test + ship — PLANNED
+
+## Current Plan
+
+Use `PROTOTYPE_PLAN.md` as the current engineering plan for getting to a functioning prototype.

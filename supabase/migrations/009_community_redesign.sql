@@ -49,6 +49,12 @@ alter table parties add column if not exists tags text[] not null default '{}';
 alter table parties alter column max_members set default 6;
 
 -- Seed organic squads (admin-managed, members join/leave freely)
+-- System owner for admin-managed organic squads. Uses nerd_number 0 so real
+-- attendee numbers still start at 1 from the signup counter.
+insert into profiles (id, nerd_number, display_name, discoverable)
+values ('00000000-0000-0000-0000-000000000000', 0, 'NerdCon HQ', false)
+on conflict (id) do nothing;
+
 insert into parties (name, created_by, invite_code, max_members, is_organic, description, emoji, tags) values
   ('Founders Circle', '00000000-0000-0000-0000-000000000000', 'FOUND1', 500, true, 'For founders building the future of fintech. Share war stories, find co-founders, and compare notes.', '🚀', array['founder', 'ceo', 'co-founder']),
   ('Speakers Lounge', '00000000-0000-0000-0000-000000000000', 'SPEAK1', 500, true, 'Green room for NerdCon speakers. Prep talks, share slides, coordinate.', '🎤', array['speaker']),

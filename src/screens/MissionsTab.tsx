@@ -225,7 +225,11 @@ function AgendaView({ sessions, loading, day, setDay, trackFilter, setTrackFilte
 
   function handleQuickAdd(e: React.MouseEvent, session: Session) {
     e.stopPropagation()
-    isInSchedule(session.id) ? removeSession(session.id) : addSession(session.id)
+    if (isInSchedule(session.id)) {
+      removeSession(session.id)
+    } else {
+      addSession(session.id)
+    }
   }
 
   return (

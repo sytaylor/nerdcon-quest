@@ -20,6 +20,10 @@ export interface Sponsor {
   display_order: number
 }
 
+interface SponsorVisitRow {
+  sponsor_id: string
+}
+
 /* ─── Stub Data ─── */
 
 const STUB_SPONSORS: Sponsor[] = [
@@ -84,7 +88,7 @@ export function useSponsorVisits() {
       .eq('user_id', user.id)
 
     if (data) {
-      setVisitedIds(new Set(data.map((v: any) => v.sponsor_id)))
+      setVisitedIds(new Set((data as SponsorVisitRow[]).map((v) => v.sponsor_id)))
     }
     setLoading(false)
   }, [user])

@@ -58,14 +58,14 @@ const LEVELS: LevelInfo[] = [
   { level: 5, label: 'Legend', min: 1500, max: Infinity },
 ]
 
-function getLevelInfo(xp: number): { level: number; label: string; progress: number } {
+export function getLevelInfo(xp: number): { level: number; label: string; progress: number } {
   const info = LEVELS.find((l) => xp >= l.min && xp <= l.max) ?? LEVELS[0]
   const range = info.max === Infinity ? 500 : info.max - info.min + 1
   const progress = Math.min((xp - info.min) / range, 1)
   return { level: info.level, label: info.label, progress }
 }
 
-function buildMissions(
+export function buildMissions(
   scheduleCount: number,
   connectionCount: number,
   rsvpCount: number,
@@ -179,7 +179,7 @@ const MOCK_XP = MOCK_MISSIONS.filter((m) => m.completed).reduce((s, m) => s + m.
 const XPContext = createContext<XPState | null>(null)
 
 export function XPProvider({ children }: { children: ReactNode }) {
-  const { user, profile, updateProfile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const [missions, setMissions] = useState<Mission[]>(DEV_MODE ? MOCK_MISSIONS : [])
   const [scheduleCount, setScheduleCount] = useState(DEV_MODE ? 2 : 0)
   const [connectionCount, setConnectionCount] = useState(DEV_MODE ? 1 : 0)
@@ -188,7 +188,7 @@ export function XPProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<XPToast[]>([])
 
   // Load previously completed missions from profile
-  const savedCompletions = (profile as any)?.completed_missions as string[] | undefined
+  const savedCompletions = profile?.completed_missions
   const completedMissionIds = useRef<Set<string>>(
     DEV_MODE
       ? new Set(MOCK_MISSIONS.filter((m) => m.completed).map((m) => m.id))
@@ -270,15 +270,11 @@ export function XPProvider({ children }: { children: ReactNode }) {
 
     // Sync XP and completed missions to profile if changed
     if (xp !== lastSyncedXP.current) {
-      const { level } = getLevelInfo(xp)
       lastSyncedXP.current = xp
-      await updateProfile({
-        xp,
-        level,
-        completed_missions: Array.from(completedMissionIds.current),
-      } as any)
+      const { error } = await supabase.rpc('sync_profile_missions')
+      if (!error) await refreshProfile()
     }
-  }, [user, updateProfile])
+  }, [user, refreshProfile])
 
   // Check on mount
   useEffect(() => {

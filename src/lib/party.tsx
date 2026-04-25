@@ -29,6 +29,13 @@ export interface PartyMember {
   }
 }
 
+interface PartyMemberRow {
+  id: string
+  user_id: string
+  joined_at: string
+  profiles: PartyMember['profile'] | null
+}
+
 interface PartyState {
   party: Party | null
   members: PartyMember[]
@@ -167,7 +174,7 @@ export function PartyProvider({ children }: { children: ReactNode }) {
         .order('joined_at', { ascending: true })
 
       if (memberData) {
-        const mapped: PartyMember[] = memberData.map((m: any) => ({
+        const mapped: PartyMember[] = (memberData as unknown as PartyMemberRow[]).map((m) => ({
           id: m.id,
           user_id: m.user_id,
           joined_at: m.joined_at,
@@ -279,36 +286,16 @@ export function PartyProvider({ children }: { children: ReactNode }) {
       return { error: null }
     }
 
-    // Find party by invite code
-    const { data: target, error: findErr } = await supabase
-      .from('parties')
-      .select('*')
-      .eq('invite_code', inviteCode.toUpperCase())
-      .maybeSingle()
-
-    if (findErr || !target) {
-      return { error: 'Invalid invite code' }
-    }
-
-    // Check member count
-    const { count } = await supabase
-      .from('party_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('party_id', target.id)
-
-    if (count !== null && count >= target.max_members) {
-      return { error: 'Party is full' }
-    }
-
-    // Join
-    const { error: joinErr } = await supabase
-      .from('party_members')
-      .insert({ party_id: target.id, user_id: user.id })
+    const { error: joinErr } = await supabase.rpc('join_party_by_invite', {
+      p_invite_code: inviteCode.trim().toUpperCase(),
+    })
 
     if (joinErr) {
-      if (joinErr.message.includes('duplicate') || joinErr.message.includes('unique')) {
+      if (joinErr.message.includes('already')) {
         return { error: 'Already in a party' }
       }
+      if (joinErr.message.includes('full')) return { error: 'Party is full' }
+      if (joinErr.message.includes('not found')) return { error: 'Invalid invite code' }
       return { error: joinErr.message }
     }
 

@@ -28,6 +28,14 @@ export interface UseSessionsOptions {
   session_type?: Session['session_type']
 }
 
+interface UserScheduleRow {
+  sessions: Session | null
+}
+
+interface RsvpRow {
+  session_id: string
+}
+
 /* ─── useSessions ─── */
 
 export function useSessions(options: UseSessionsOptions = {}) {
@@ -102,7 +110,9 @@ export function useUserSchedule() {
         .eq('user_id', user.id)
 
       if (error) throw error
-      const rows = (data ?? []).map((r: any) => r.sessions as Session).filter(Boolean)
+      const rows = ((data ?? []) as unknown as UserScheduleRow[])
+        .map((r) => r.sessions)
+        .filter((session): session is Session => Boolean(session))
       setSchedule(rows)
       setIds(new Set(rows.map((s) => s.id)))
     } catch {
@@ -165,7 +175,7 @@ export function useRSVP() {
       .select('session_id')
       .eq('user_id', user.id)
 
-    if (data) setRsvpIds(new Set(data.map((r: any) => r.session_id)))
+    if (data) setRsvpIds(new Set((data as RsvpRow[]).map((r) => r.session_id)))
     setLoading(false)
   }, [user])
 

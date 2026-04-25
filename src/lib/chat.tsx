@@ -240,7 +240,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setMessages(DEV_MODE ? MOCK_MESSAGES : [])
       setLoading(false)
     }
-  }, [party?.id, fetchMessages])
+  }, [party, fetchMessages])
 
   /** Client-side spam detection */
   function isSpamming(): boolean {

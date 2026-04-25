@@ -12,6 +12,17 @@ import { useAuth, type Profile } from './auth'
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true'
 const MAX_PENDING_REQUESTS = 20
 
+interface ConnectionRow {
+  user_a: string
+  user_b: string
+}
+
+interface PendingOutboundRow {
+  recipient_id: string
+}
+
+type ProfileLookupRow = Pick<Profile, 'id' | 'display_name' | 'nerd_number' | 'company' | 'role' | 'quest_line'>
+
 /* ─── Types ─── */
 
 export interface ConnectionRequest {
@@ -101,7 +112,9 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
 
     if (!data) return
 
-    const otherIds = data.map((c: any) => c.user_a === user.id ? c.user_b : c.user_a)
+    const otherIds = (data as ConnectionRow[]).map((c) =>
+      c.user_a === user.id ? c.user_b : c.user_a
+    )
 
     if (otherIds.length === 0) {
       setConnections([])
@@ -115,8 +128,9 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
       .in('id', otherIds)
 
     if (profiles) {
-      setConnections(profiles as ConnectedUser[])
-      setConnectedIds(new Set(profiles.map((p: any) => p.id)))
+      const connectedProfiles = profiles as ConnectedUser[]
+      setConnections(connectedProfiles)
+      setConnectedIds(new Set(connectedProfiles.map((p) => p.id)))
     }
   }, [user])
 
@@ -134,7 +148,8 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
     if (!data) return
 
     // Enrich with sender profiles
-    const senderIds = data.map((r: any) => r.sender_id)
+    const requests = data as ConnectionRequest[]
+    const senderIds = requests.map((r) => r.sender_id)
     if (senderIds.length === 0) { setIncomingRequests([]); return }
 
     const { data: profiles } = await supabase
@@ -142,9 +157,11 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
       .select('id, display_name, nerd_number, company, role, quest_line')
       .in('id', senderIds)
 
-    const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]))
+    const profileMap = new Map(
+      ((profiles ?? []) as ProfileLookupRow[]).map((p) => [p.id, p])
+    )
 
-    setIncomingRequests(data.map((r: any) => ({
+    setIncomingRequests(requests.map((r) => ({
       ...r,
       profile: profileMap.get(r.sender_id),
     })))
@@ -161,7 +178,7 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
       .eq('status', 'pending')
 
     if (data) {
-      setPendingOutboundIds(new Set(data.map((r: any) => r.recipient_id)))
+      setPendingOutboundIds(new Set((data as PendingOutboundRow[]).map((r) => r.recipient_id)))
     }
   }, [user])
 
@@ -171,7 +188,7 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }, [fetchConnections, fetchRequests, fetchOutbound])
 
-  useEffect(() => { if (user) refresh() }, [user?.id])
+  useEffect(() => { if (user) refresh() }, [user, refresh])
 
   /** Realtime: new incoming requests */
   useEffect(() => {
@@ -188,7 +205,7 @@ export function ConnectionsProvider({ children }: { children: ReactNode }) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user?.id, fetchRequests])
+  }, [user, fetchRequests])
 
   /** Send connection request */
   const sendRequest = useCallback(async (recipientId: string, message?: string): Promise<{ error: string | null }> => {

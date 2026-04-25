@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+test-results/
 *.local
 .env
 supabase/.temp/
@@ -25,3 +26,4 @@ supabase/.temp/
 *.sln
 *.sw?
 .vercel
+.gstack/

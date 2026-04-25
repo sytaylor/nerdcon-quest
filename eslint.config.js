@@ -19,5 +19,12 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Data-fetching hooks intentionally set loading/data state from effects.
+      // Keep exhaustive-deps on, but don't treat the pattern itself as a lint failure.
+      'react-hooks/set-state-in-effect': 'off',
+      // Context/provider files export hooks next to providers. That is deliberate here.
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])

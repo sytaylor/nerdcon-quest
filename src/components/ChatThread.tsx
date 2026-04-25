@@ -43,7 +43,7 @@ export function ChatThread({
     if (!loading && messages.length > 0) {
       bottomRef.current?.scrollIntoView({ behavior: 'instant' })
     }
-  }, [loading])
+  }, [loading, messages.length])
 
   if (loading) {
     return (

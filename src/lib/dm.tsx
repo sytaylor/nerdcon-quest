@@ -67,6 +67,17 @@ interface DMState {
   refresh: () => Promise<void>
 }
 
+interface DmRequestRow extends DMRequest {
+  profiles?: DMRequest['sender_profile'] | null
+}
+
+interface DmConversationRow {
+  id: string
+  user_a: string
+  user_b: string
+  created_at: string
+}
+
 /* ─── Mock Data ─── */
 
 const MOCK_REQUESTS: DMRequest[] = [
@@ -127,7 +138,7 @@ export function DMProvider({ children }: { children: ReactNode }) {
       .order('created_at', { ascending: false })
 
     if (data) {
-      setIncomingRequests(data.map((r: any) => ({
+      setIncomingRequests((data as DmRequestRow[]).map((r) => ({
         ...r,
         sender_profile: r.profiles ?? undefined,
       })))
@@ -148,7 +159,7 @@ export function DMProvider({ children }: { children: ReactNode }) {
 
     // Enrich with other user profile and last message
     const enriched: DMConversation[] = await Promise.all(
-      data.map(async (c: any) => {
+      (data as DmConversationRow[]).map(async (c) => {
         const otherId = c.user_a === user.id ? c.user_b : c.user_a
 
         const [profileRes, msgRes, readRes] = await Promise.all([
@@ -205,7 +216,7 @@ export function DMProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (user) refresh()
-  }, [user?.id])
+  }, [user, refresh])
 
   /** Subscribe to new DM requests */
   useEffect(() => {
@@ -222,7 +233,7 @@ export function DMProvider({ children }: { children: ReactNode }) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user?.id, fetchRequests])
+  }, [user, fetchRequests])
 
   /** Subscribe to messages in active conversation */
   useEffect(() => {
@@ -266,7 +277,7 @@ export function DMProvider({ children }: { children: ReactNode }) {
     }
 
     return () => { supabase.removeChannel(channel) }
-  }, [activeConversationId, user?.id])
+  }, [activeConversationId, user])
 
   /** Send DM request */
   const sendRequest = useCallback(async (recipientId: string): Promise<{ error: string | null }> => {
@@ -298,29 +309,10 @@ export function DMProvider({ children }: { children: ReactNode }) {
       return { error: null }
     }
 
-    // Find the request
-    const { data: req } = await supabase
-      .from('dm_requests')
-      .select('*')
-      .eq('id', requestId)
-      .single()
-
-    if (!req) return { error: 'Request not found' }
-
-    // Update request status
-    await supabase.from('dm_requests').update({
-      status: 'accepted',
-      responded_at: new Date().toISOString(),
-    }).eq('id', requestId)
-
-    // Create conversation (user_a < user_b)
-    const userA = req.sender_id < user.id ? req.sender_id : user.id
-    const userB = req.sender_id < user.id ? user.id : req.sender_id
-
-    await supabase.from('dm_conversations').upsert({
-      user_a: userA,
-      user_b: userB,
-    }, { onConflict: 'user_a,user_b' })
+    const { error } = await supabase.rpc('accept_dm_request', {
+      p_request_id: requestId,
+    })
+    if (error) return { error: error.message }
 
     // Refresh lists
     await Promise.all([fetchRequests(), fetchConversations()])
