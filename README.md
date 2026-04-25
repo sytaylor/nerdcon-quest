@@ -54,3 +54,7 @@ The latest hardening migration is `010_security_hardening.sql`. It moves the ris
 ## Prototype Plan
 
 The current engineering plan is in [PROTOTYPE_PLAN.md](./PROTOTYPE_PLAN.md).
+
+Alpha readiness is tracked in [ALPHA_READINESS.md](./ALPHA_READINESS.md).
+
+Tester instructions are in [ALPHA_TESTER_GUIDE.md](./ALPHA_TESTER_GUIDE.md).

@@ -85,13 +85,11 @@ After
 
 | Priority | Risk | Why It Matters | Fix |
 |---|---|---|---|
-| P0 | Migration not applied remotely yet | Client now expects new RPCs | Run `supabase db push`, then smoke test auth, party join, DM accept, XP |
-| P0 | No automated tests | Core loop can regress silently | Add Vitest + Playwright coverage for auth/dev mode, QR, XP, DMs, party joins |
 | P0 | No production observability | Day-of failures will be invisible | Add Sentry, Vercel analytics/log drains, Supabase dashboard checks |
-| P1 | PWA audit still has transitive `serialize-javascript` high findings | Build-chain risk remains | Track vite-plugin-pwa/workbox fix or evaluate safe replacement |
+| P0 | Production auth has not been alpha-smoked | Dev-mode works, but real tester sign-in is the first actual gate | Test magic link, onboarding, return session, sign-out on real phones |
+| P0 | No in-app alpha feedback capture | Tester confusion will get lost in chats and memory | Add visible "Report issue" path with route/browser/user context |
 | P1 | Map is still a stub | Attendee trust drops if venue info is fake | Replace with real floor plan once available, or label as preview |
 | P1 | Organic squads UI is not fully wired | "Join" buttons imply behavior that is not complete | Either implement join/open chat or hide until real |
-| P1 | First 60 seconds lacks a strong "do this first" path | Adoption failure is as bad as crash failure | Add launch checklist and Nerd Number explainer |
 | P2 | No account deletion/privacy UX | Required before native, useful for trust now | Add profile deletion/export path and privacy copy |
 
 ## Target Prototype Architecture
@@ -382,9 +380,9 @@ The prototype is ready when:
 
 ## Immediate Next Actions
 
-1. Apply migration `010_security_hardening.sql` to Supabase.
-2. Add automated tests around the new RPC trust boundaries.
-3. Implement the first-60-seconds checklist and Nerd Number explanation.
+1. Run production-auth alpha smoke with `VITE_DEV_MODE=false`.
+2. Seed realistic alpha sessions, speakers, sponsors, squads, and test profiles.
+3. Add in-app alpha feedback capture.
 4. Wire or hide organic squad joins.
 5. Add production observability.
-6. Resolve or explicitly accept the remaining PWA build-chain audit issue.
+6. Test QR camera, refresh, deep links, and slow network on real phones.
