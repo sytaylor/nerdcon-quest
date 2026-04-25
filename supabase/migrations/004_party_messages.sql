@@ -14,11 +14,42 @@ create table if not exists party_messages (
 create index idx_party_messages_party_created on party_messages (party_id, created_at desc);
 create index idx_party_messages_sender on party_messages (sender_id);
 
--- Rate limiting: prevent more than 1 message per second per user per party
--- (enforced via a unique partial index on truncated timestamp)
-create unique index idx_party_messages_rate_limit
-  on party_messages (party_id, sender_id, (date_trunc('second', created_at)))
-  where message_type = 'text';
+-- Rate limiting: prevent more than 1 message per second per user per party.
+-- This cannot be a date_trunc expression index because date_trunc(timestamptz)
+-- is not immutable. Use a trigger with a transaction-scoped advisory lock so
+-- concurrent inserts for the same party/sender are checked serially.
+create or replace function enforce_party_message_rate_limit()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.message_type <> 'text' or new.sender_id is null then
+    return new;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext(new.party_id::text), hashtext(new.sender_id::text));
+
+  if exists (
+    select 1
+    from party_messages
+    where party_id = new.party_id
+      and sender_id = new.sender_id
+      and message_type = 'text'
+      and created_at > new.created_at - interval '1 second'
+    limit 1
+  ) then
+    raise exception 'rate limit exceeded';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists party_messages_rate_limit on party_messages;
+create trigger party_messages_rate_limit
+  before insert on party_messages
+  for each row
+  execute function enforce_party_message_rate_limit();
 
 -- Track last read position for unread counts
 create table if not exists party_chat_reads (

@@ -37,9 +37,36 @@ create table if not exists direct_messages (
 
 create index idx_direct_messages_convo on direct_messages (conversation_id, created_at desc);
 
--- Rate limit: 1 message per second per user per conversation
-create unique index idx_dm_rate_limit
-  on direct_messages (conversation_id, sender_id, (date_trunc('second', created_at)));
+-- Rate limit: 1 message per second per user per conversation.
+-- Implemented as a trigger because date_trunc(timestamptz) is not immutable
+-- and cannot be used in an index expression.
+create or replace function enforce_direct_message_rate_limit()
+returns trigger
+language plpgsql
+as $$
+begin
+  perform pg_advisory_xact_lock(hashtext(new.conversation_id::text), hashtext(new.sender_id::text));
+
+  if exists (
+    select 1
+    from direct_messages
+    where conversation_id = new.conversation_id
+      and sender_id = new.sender_id
+      and created_at > new.created_at - interval '1 second'
+    limit 1
+  ) then
+    raise exception 'rate limit exceeded';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists direct_messages_rate_limit on direct_messages;
+create trigger direct_messages_rate_limit
+  before insert on direct_messages
+  for each row
+  execute function enforce_direct_message_rate_limit();
 
 -- DM read tracking
 create table if not exists dm_reads (

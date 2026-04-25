@@ -48,20 +48,17 @@ alter table parties add column if not exists tags text[] not null default '{}';
 -- (they use a higher cap)
 alter table parties alter column max_members set default 6;
 
--- Seed organic squads (admin-managed, members join/leave freely)
--- System owner for admin-managed organic squads. Uses nerd_number 0 so real
--- attendee numbers still start at 1 from the signup counter.
-insert into profiles (id, nerd_number, display_name, discoverable)
-values ('00000000-0000-0000-0000-000000000000', 0, 'NerdCon HQ', false)
-on conflict (id) do nothing;
+-- Seed organic squads (admin-managed, members join/leave freely).
+-- Organic squads are system-owned, so they intentionally have no profile owner.
+alter table parties alter column created_by drop not null;
 
 insert into parties (name, created_by, invite_code, max_members, is_organic, description, emoji, tags) values
-  ('Founders Circle', '00000000-0000-0000-0000-000000000000', 'FOUND1', 500, true, 'For founders building the future of fintech. Share war stories, find co-founders, and compare notes.', '🚀', array['founder', 'ceo', 'co-founder']),
-  ('Speakers Lounge', '00000000-0000-0000-0000-000000000000', 'SPEAK1', 500, true, 'Green room for NerdCon speakers. Prep talks, share slides, coordinate.', '🎤', array['speaker']),
-  ('Builder''s Guild', '00000000-0000-0000-0000-000000000000', 'BUILD1', 500, true, 'Engineers, architects, and code nerds. Talk APIs, infra, and shipping.', '⚡', array['builder', 'engineer', 'developer', 'cto']),
-  ('Operator''s Den', '00000000-0000-0000-0000-000000000000', 'OPER01', 500, true, 'Product, growth, and ops leaders. Strategy, metrics, and scaling.', '📊', array['operator', 'product', 'growth']),
-  ('Investor Circle', '00000000-0000-0000-0000-000000000000', 'INVEST', 500, true, 'VCs, angels, and allocators. Deal flow, thesis, and portfolio.', '💰', array['investor', 'vc', 'angel']),
-  ('First-Timers', '00000000-0000-0000-0000-000000000000', 'FIRST1', 500, true, 'Your first NerdCon? Welcome! Find your people and get the lay of the land.', '👋', array['first-timer'])
+  ('Founders Circle', null, 'FOUND1', 500, true, 'For founders building the future of fintech. Share war stories, find co-founders, and compare notes.', '🚀', array['founder', 'ceo', 'co-founder']),
+  ('Speakers Lounge', null, 'SPEAK1', 500, true, 'Green room for NerdCon speakers. Prep talks, share slides, coordinate.', '🎤', array['speaker']),
+  ('Builder''s Guild', null, 'BUILD1', 500, true, 'Engineers, architects, and code nerds. Talk APIs, infra, and shipping.', '⚡', array['builder', 'engineer', 'developer', 'cto']),
+  ('Operator''s Den', null, 'OPER01', 500, true, 'Product, growth, and ops leaders. Strategy, metrics, and scaling.', '📊', array['operator', 'product', 'growth']),
+  ('Investor Circle', null, 'INVEST', 500, true, 'VCs, angels, and allocators. Deal flow, thesis, and portfolio.', '💰', array['investor', 'vc', 'angel']),
+  ('First-Timers', null, 'FIRST1', 500, true, 'Your first NerdCon? Welcome! Find your people and get the lay of the land.', '👋', array['first-timer'])
 on conflict do nothing;
 
 -- Meet-at location pins in messages

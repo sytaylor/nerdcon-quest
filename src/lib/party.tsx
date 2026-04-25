@@ -9,7 +9,7 @@ const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true'
 export interface Party {
   id: string
   name: string
-  created_by: string
+  created_by: string | null
   invite_code: string
   max_members: number
   created_at: string
