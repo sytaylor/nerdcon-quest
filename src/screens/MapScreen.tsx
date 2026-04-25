@@ -3,6 +3,7 @@ import { Compass, Flame, Users, Zap } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Sheet } from '../components/Sheet'
+import { StartHereCard } from '../components/StartHereCard'
 
 const ROOMS = [
   { id: 'main-stage', label: 'Main Stage', x: 15, y: 20, w: 35, h: 25, type: 'boss' as const },
@@ -35,6 +36,8 @@ export function MapScreen() {
         </div>
         <Badge color="magenta">LIVE NOW</Badge>
       </div>
+
+      <StartHereCard />
 
       {/* Map */}
       <div className="flex-1 px-4 py-3">
