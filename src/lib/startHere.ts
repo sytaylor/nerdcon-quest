@@ -23,9 +23,9 @@ export function buildLaunchChecklist(input: LaunchChecklistInput): LaunchCheckli
     {
       id: 'profile',
       label: 'Claim your Nerd Number',
-      detail: 'This is your event handle for QR scans, rankings, and introductions.',
+      detail: 'Finish the public details people use before they connect with you.',
       complete: input.hasProfile,
-      actionLabel: 'Finish profile',
+      actionLabel: 'Edit profile',
       href: '/profile',
     },
     {
@@ -47,10 +47,12 @@ export function buildLaunchChecklist(input: LaunchChecklistInput): LaunchCheckli
     {
       id: 'connection',
       label: 'Make your first connection',
-      detail: input.connectionCount > 0 ? 'First scan complete.' : 'Open your QR scanner and trade badges with someone nearby.',
+      detail: input.connectionCount > 0
+        ? 'First connection logged.'
+        : 'Browse people first. Use QR scanning only when another attendee is next to you.',
       complete: input.connectionCount >= 1,
-      actionLabel: 'Scan QR',
-      href: '/profile',
+      actionLabel: 'Browse people',
+      href: '/community',
     },
   ]
 }

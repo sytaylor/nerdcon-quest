@@ -19,6 +19,21 @@ describe('startHere', () => {
     expect(getNextLaunchAction(items)?.id).toBe('schedule')
   })
 
+  it('sends solo connection work to Community instead of the camera scanner', () => {
+    const items = buildLaunchChecklist({
+      hasProfile: true,
+      questLine: 'operator',
+      scheduleCount: 3,
+      connectionCount: 0,
+    })
+
+    const connection = getNextLaunchAction(items)
+
+    expect(connection?.id).toBe('connection')
+    expect(connection?.actionLabel).toBe('Browse people')
+    expect(connection?.href).toBe('/community')
+  })
+
   it('returns no action once the launch checklist is complete', () => {
     const items = buildLaunchChecklist({
       hasProfile: true,

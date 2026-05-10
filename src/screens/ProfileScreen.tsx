@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, LogOut, Zap, Trophy, Users, Scan } from 'lucide-react'
+import { Edit3, LogOut, Scan, Trophy, User, Users, Zap } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { XPBar } from '../components/XPBar'
 import { Button } from '../components/Button'
 import { QRCode } from '../components/QRCode'
 import { QRScanner } from '../components/QRScanner'
+import { ProfileEditor } from '../components/ProfileEditor'
 import { useAuth } from '../lib/auth'
 import { useXP } from '../lib/xp'
 import { supabase } from '../lib/supabase'
@@ -29,6 +30,7 @@ export function ProfileScreen() {
   const { profile, user, signOut, updateProfile } = useAuth()
   const xp = useXP()
   const [showScanner, setShowScanner] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
 
   const handleScan = useCallback(async (data: { userId: string; nerdNumber: number }) => {
     setShowScanner(false)
@@ -89,13 +91,69 @@ export function ProfileScreen() {
               Looking for: {profile.looking_for}
             </p>
           )}
+          {profile && (
+            <Button
+              variant="secondary"
+              className="mt-4 !px-4 !py-2 !text-xs"
+              onClick={() => setEditingProfile(true)}
+            >
+              <Edit3 size={14} />
+              Edit Profile
+            </Button>
+          )}
         </div>
       </Card>
+
+      {profile && editingProfile ? (
+        <ProfileEditor
+          profile={profile}
+          onCancel={() => setEditingProfile(false)}
+          onSave={updateProfile}
+        />
+      ) : profile && (!profile.company || !profile.role || !profile.looking_for) ? (
+        <Card className="mb-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Badge color="cyan">Profile</Badge>
+              <h2 className="mt-2 font-mono text-sm font-bold text-terminal-white">
+                Finish the useful bits
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-fog-gray">
+                Add company, role, and what you are looking for so people know why to connect before they scan.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              className="shrink-0 !px-3 !py-2 !text-xs"
+              onClick={() => setEditingProfile(true)}
+            >
+              Edit
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       {/* QR Code */}
       {user && profile ? (
         <div className="mb-6">
-          <QRCode userId={user.id} nerdNumber={profile.nerd_number} size={180} />
+          <div className="mb-2">
+            <h2 className="font-mono text-xs uppercase tracking-wider text-fog-gray">
+              Your connection QR
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-fog-gray/80">
+              Show this to someone beside you. It is not a login step. If you are testing solo, use Community instead.
+            </p>
+          </div>
+          <div className="mb-3 grid grid-cols-1 gap-2">
+            <Button variant="secondary" className="w-full" onClick={() => setShowScanner(true)}>
+              <Scan size={16} />
+              Scan someone else's QR
+            </Button>
+            <Button variant="ghost" className="w-full !py-2 text-fog-gray" onClick={() => navigate('/community')}>
+              No one nearby? Browse People
+            </Button>
+          </div>
+          <QRCode userId={user.id} nerdNumber={profile.nerd_number} size={150} />
         </div>
       ) : (
         <Card className="mb-6">
@@ -106,14 +164,6 @@ export function ProfileScreen() {
             <p className="text-xs text-fog-gray">Sign in to get your QR code</p>
           </div>
         </Card>
-      )}
-
-      {/* Scan button */}
-      {user && (
-        <Button variant="secondary" className="mb-6 w-full" onClick={() => setShowScanner(true)}>
-          <Scan size={16} />
-          Scan a Nerd's QR Code
-        </Button>
       )}
 
       {/* XP */}

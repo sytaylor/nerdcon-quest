@@ -13,7 +13,7 @@ const QUEST_LINES = [
 ]
 
 const SAMPLE_QUESTS = [
-  { name: 'First Blood', xp: 50, desc: 'Connect with your first fellow nerd via QR scan', type: 'Social', status: 'available' },
+  { name: 'First Blood', xp: 50, desc: 'Connect with your first fellow nerd from Community or QR', type: 'Social', status: 'available' },
   { name: 'Plan Ahead', xp: 50, desc: 'Add 3+ sessions to your schedule', type: 'Content', status: 'available' },
   { name: 'Deep Dive', xp: 100, desc: 'Attend 3 sessions in your quest line and rate each', type: 'Content', status: 'available' },
   { name: 'Party Up', xp: 75, desc: 'Form or join a party of 3+ members', type: 'Social', status: 'available' },

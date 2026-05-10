@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Hammer, Settings, Compass, ArrowRight, Loader2, Mail } from 'lucide-react'
 import { Button } from '../components/Button'
@@ -83,10 +83,11 @@ export function OnboardingScreen() {
     await updateProfile({ quest_line: ql })
   }
 
-  // If user is authed but hasn't set display_name, jump to profile step
-  if (profile && !profile.display_name && step === 'email') {
-    setStep('profile')
-  }
+  useEffect(() => {
+    if (profile && !profile.display_name && step === 'email') {
+      setStep('profile')
+    }
+  }, [profile, step])
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-5 py-10">

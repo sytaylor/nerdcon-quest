@@ -110,7 +110,7 @@ export function buildMissions(
     mission(
       'first-blood',
       'First Blood',
-      'Make your first connection via QR scan',
+      'Make your first connection from Community or QR scan',
       50,
       'social',
       Math.min(connectionCount, 1),

@@ -1,10 +1,13 @@
 import { motion } from 'framer-motion'
+import type { LucideIcon } from 'lucide-react'
 
 interface Segment {
   key: string
   label: string
+  icon?: LucideIcon
   badge?: number | null
   dot?: boolean
+  pulse?: boolean
 }
 
 interface SegmentedControlProps {
@@ -18,6 +21,7 @@ export function SegmentedControl({ segments, active, onChange }: SegmentedContro
     <div className="inline-flex w-full rounded-full border border-white/5 bg-panel-dark p-1">
       {segments.map((segment) => {
         const isActive = segment.key === active
+        const Icon = segment.icon
         return (
           <button
             key={segment.key}
@@ -32,12 +36,18 @@ export function SegmentedControl({ segments, active, onChange }: SegmentedContro
               />
             )}
             <span
-              className={`relative z-10 ${
+              className={`relative z-10 inline-flex items-center gap-1.5 ${
                 isActive
                   ? 'text-terminal-white'
                   : 'text-fog-gray hover:text-terminal-white'
               }`}
             >
+              {Icon && (
+                <Icon
+                  size={13}
+                  className={segment.pulse && !isActive ? 'animate-pulse text-loot-gold' : ''}
+                />
+              )}
               {segment.label}
             </span>
 

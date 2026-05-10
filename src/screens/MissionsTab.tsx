@@ -100,7 +100,7 @@ export function MissionsTab() {
 
   const segments = [
     { key: 'missions', label: 'Missions', dot: completableMissions > 0 },
-    { key: 'agenda', label: 'Agenda' },
+    { key: 'agenda', label: 'Agenda', icon: CalendarDays, pulse: scheduleCount < 3 },
     { key: 'schedule', label: 'Schedule', badge: scheduleCount > 0 ? scheduleCount : null },
     { key: 'events', label: 'Events' },
   ]
@@ -115,7 +115,7 @@ export function MissionsTab() {
         break
       case 'first-blood':
       case 'guild-master':
-        navigate('/profile') // QR scanner is on profile
+        navigate('/community')
         break
       case 'party-up':
         navigate('/party')

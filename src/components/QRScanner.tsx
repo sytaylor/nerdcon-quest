@@ -41,7 +41,7 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
         },
       )
       .catch(() => {
-        setError('Camera access denied. Please allow camera permissions and try again.')
+        setError('Camera access is blocked. Allow camera permissions in Safari and make sure you are on HTTPS, or close this and browse People instead.')
       })
 
     return () => {
@@ -76,6 +76,9 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
           >
             <div className="rounded-xl border border-boss-magenta/30 bg-boss-magenta/10 p-6">
               <p className="font-mono text-sm text-boss-magenta">{error}</p>
+              <p className="mt-3 text-xs text-fog-gray">
+                QR scanning is only for when another attendee is beside you. You can still connect from Community.
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -104,7 +107,7 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
             </div>
 
             <p className="font-mono text-xs text-fog-gray">
-              Point at a Nerd QR code
+              Point at another attendee's Nerd QR code
             </p>
           </motion.div>
         )}

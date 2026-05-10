@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Circle, Hash } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Circle, Gift, Hash } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from './Badge'
 import { Button } from './Button'
@@ -49,6 +49,19 @@ export function StartHereCard() {
         Your Nerd Number is your event handle. It gives every attendee a short, memorable ID for QR scans,
         leaderboards, and “find me later” conversations without exposing email or phone details.
       </p>
+
+      <div className="rounded-lg border border-loot-gold/20 bg-loot-gold/10 p-3">
+        <div className="flex items-center gap-2 text-loot-gold">
+          <Gift size={15} />
+          <p className="font-mono text-xs font-bold uppercase tracking-wider">
+            What do you win?
+          </p>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-fog-gray">
+          XP is for status first: leaderboard bragging rights, rare-number callouts, and event loot drops.
+          Final prizes get locked before early access.
+        </p>
+      </div>
 
       <div className="space-y-2">
         {checklist.map((item) => {
